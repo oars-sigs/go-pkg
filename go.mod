@@ -1,4 +1,4 @@
-module pkg.oars.vip/oars-sigs/go-pkg
+module pkg.oars.vip/go-pkg
 
 go 1.16
 

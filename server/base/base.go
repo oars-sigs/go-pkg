@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
-	"pkg.oars.vip/oars-sigs/go-pkg/e"
+	"pkg.oars.vip/go-pkg/e"
 )
 
 //BaseController Controller
