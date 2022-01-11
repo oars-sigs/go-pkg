@@ -34,6 +34,9 @@ func (c *BaseController) Error(g *gin.Context, err error, msg ...string) {
 	if cerr, ok := err.(*perr.Error); ok {
 		res.Msg = cerr.Msg()
 		res.Code = cerr.Code()
+	} else {
+		res.Msg = perr.ErrInternal.Msg()
+		res.Code = perr.ErrInternal.Code()
 	}
 	if res.Msg == "" && len(msg) != 0 && msg[0] != "" {
 		res.Msg = msg[0]
@@ -52,7 +55,7 @@ func (c *BaseController) OK(g *gin.Context, data interface{}, msg ...string) {
 	}
 	res.RequestId = GenerateMsgIDFromContext(g)
 	res.Code = SuccessCode
-	g.Set("result", res)
+	g.Set("data", res)
 	g.AbortWithStatusJSON(http.StatusOK, res)
 }
 
@@ -64,4 +67,18 @@ func (c *BaseController) PageOK(g *gin.Context, result interface{}, total, pageN
 	res.PageNum = pageNum
 	res.PageSize = pageSize
 	c.OK(g, res, msg...)
+}
+
+func (c *BaseController) PageQuery(g *gin.Context) (*Page, error) {
+	var res Page
+	err := g.BindQuery(&res)
+	if err == nil {
+		if res.PageNum == 0 {
+			res.PageNum = 1
+		}
+		if res.PageSize == 0 {
+			res.PageSize = 10
+		}
+	}
+	return &res, err
 }
