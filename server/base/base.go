@@ -71,7 +71,7 @@ func (c *BaseController) PageOK(g *gin.Context, result interface{}, total, pageN
 
 func (c *BaseController) PageQuery(g *gin.Context) (*Page, error) {
 	var res Page
-	err := g.BindQuery(&res)
+	err := g.ShouldBindQuery(&res)
 	if err == nil {
 		if res.PageNum == 0 {
 			res.PageNum = 1

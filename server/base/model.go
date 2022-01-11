@@ -16,8 +16,8 @@ type DataResponse struct {
 
 type Page struct {
 	Total    int `json:"total"`
-	PageNum  int `json:"pageNum"`
-	PageSize int `json:"pageSize"`
+	PageNum  int `json:"pageNum" form:"pageNum"`
+	PageSize int `json:"pageSize" form:"pageSize"`
 }
 
 type page struct {
