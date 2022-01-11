@@ -22,12 +22,12 @@ type Page struct {
 
 type page struct {
 	Page
-	List interface{} `json:"list"`
+	List interface{} `json:"rows"`
 }
 
 type Error struct {
 	RequestId string `json:"requestId,omitempty"`
-	Code      int32  `json:"code,omitempty"`
+	Code      int    `json:"code,omitempty"`
 	Msg       string `json:"msg,omitempty"`
 	Status    string `json:"status,omitempty"`
 	Detail    string `json:"detail,omitempty"`

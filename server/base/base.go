@@ -6,7 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
-	"pkg.oars.vip/go-pkg/e"
+	"pkg.oars.vip/go-pkg/perr"
+)
+
+const (
+	SuccessCode = 10000
 )
 
 //BaseController Controller
@@ -20,27 +24,23 @@ func (c *BaseController) Health(g *gin.Context) {
 }
 
 // Error
-func (c *BaseController) Error(g *gin.Context, code int, err error, msg ...string) {
+func (c *BaseController) Error(g *gin.Context, err error, msg ...string) {
 	var res DataResponse
-	if err != nil {
-		logrus.Error(err)
-		res.Detail = err.Error()
-		if cerr, ok := err.(*e.Error); ok {
-			res.Msg = cerr.Msg()
-		}
+	if err == nil {
+		err = perr.ErrUnkown
+	}
+	logrus.Error(err)
+	res.Detail = err.Error()
+	if cerr, ok := err.(*perr.Error); ok {
+		res.Msg = cerr.Msg()
+		res.Code = cerr.Code()
 	}
 	if res.Msg == "" && len(msg) != 0 && msg[0] != "" {
 		res.Msg = msg[0]
 	}
-	if res.Msg == "" {
-		res.Msg = e.GetCodeMsg(code)
-	}
 	res.RequestId = GenerateMsgIDFromContext(g)
-	res.Code = int32(code)
 	g.Set("result", res)
-	g.Set("status", code)
 	g.AbortWithStatusJSON(http.StatusOK, res)
-
 }
 
 // OK
@@ -51,18 +51,17 @@ func (c *BaseController) OK(g *gin.Context, data interface{}, msg ...string) {
 		res.Msg = msg[0]
 	}
 	res.RequestId = GenerateMsgIDFromContext(g)
-	res.Code = e.SuccessCode
+	res.Code = SuccessCode
 	g.Set("result", res)
-	g.Set("status", http.StatusOK)
 	g.AbortWithStatusJSON(http.StatusOK, res)
 }
 
 // PageOK
-func (c *BaseController) PageOK(g *gin.Context, result interface{}, total, pageNum, pageSize int, msg string) {
+func (c *BaseController) PageOK(g *gin.Context, result interface{}, total, pageNum, pageSize int, msg ...string) {
 	var res page
 	res.List = result
 	res.Total = total
 	res.PageNum = pageNum
 	res.PageSize = pageSize
-	c.OK(g, res, msg)
+	c.OK(g, res, msg...)
 }
