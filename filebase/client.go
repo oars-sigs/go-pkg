@@ -45,8 +45,24 @@ func (c *Client) setAuthHeader(headers map[string]string) map[string]string {
 
 func (c *Client) PutURL(parent, name, ext, digest string, size, expireSecond int64) (string, error) {
 	expireTime := time.Now().Unix() + expireSecond
-	ustr := fmt.Sprintf("%s/filebase/api/v1/app/files?%s=%s&digest=%s&size=%d&parent=%s&name=%s&type=%s&expireTime=%d",
-		c.cfg.Address, constant.OarsAuthKind, constant.OarsHmacSignatureKind, digest, size, parent, name, ext, expireTime)
+	ustr := fmt.Sprintf("%s/filebase/api/v1/app/files?%s=%s&%s=%s&digest=%s&size=%d&parent=%s&name=%s&type=%s&expireTime=%d",
+		c.cfg.Address, constant.OarsAuthKind, constant.OarsHmacSignatureKind, constant.ProxyAppIDHeader, c.cfg.AppID,
+		digest, size, parent, name, ext, expireTime)
+	u, err := url.Parse(ustr)
+	if err != nil {
+		return "", err
+	}
+	qs := u.Query()
+	s := SignURL(u, c.cfg.AppSecret)
+	qs.Set(constant.SignatureKey, s)
+	u.RawQuery = qs.Encode()
+	return u.String(), nil
+}
+
+func (c *Client) GetURL(id string, expireSecond int64) (string, error) {
+	expireTime := time.Now().Unix() + expireSecond
+	ustr := fmt.Sprintf("%s/filebase/api/v1/app/files/%s?%s=%s&%s=%s&expireTime=%d", c.cfg.Address, id,
+		constant.OarsAuthKind, constant.OarsHmacSignatureKind, constant.ProxyAppIDHeader, c.cfg.AppID, expireTime)
 	u, err := url.Parse(ustr)
 	if err != nil {
 		return "", err
