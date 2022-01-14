@@ -1,6 +1,8 @@
 package base
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -31,6 +33,16 @@ type Error struct {
 	Msg       string `json:"msg,omitempty"`
 	Status    string `json:"status,omitempty"`
 	Detail    string `json:"detail,omitempty"`
+}
+
+func (e Error) Error() error {
+	if e.Code != SuccessCode && e.Code != 200 {
+		if e.Detail != "" {
+			return errors.New(e.Detail)
+		}
+		return errors.New(e.Msg)
+	}
+	return nil
 }
 
 const (
