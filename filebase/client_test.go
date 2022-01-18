@@ -1,8 +1,6 @@
 package filebase
 
 import (
-	"io/ioutil"
-	"strings"
 	"testing"
 )
 
@@ -13,14 +11,15 @@ func TestClient(t *testing.T) {
 		AppSecret: "hdhS3MYxpiKCssJX06LuzcGc9vFjbPLQ",
 	}
 	cli := New(cfg)
-	data := strings.NewReader("test")
-	res, err := cli.Put(data, "", "test.txt", "txt", 4)
+
+	path := "D:/vm/iso/ttylinux-pc_i686-16.1.iso"
+	res, err := cli.FPut(path, "", "fedora-coreos-33.20210412.3.0-live.x86_64.iso", "iso")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	t.Log(res.ID, res.Digest)
-	ustr, err := cli.PutURL("", "test.txt", "txt", res.Digest, int64(4), 3600)
+	ustr, err := cli.PutURL("", "test.txt", "txt", res.Digest, res.Size, 3600)
 	if err != nil {
 		t.Error(err)
 		return
@@ -33,12 +32,12 @@ func TestClient(t *testing.T) {
 		return
 	}
 	defer resp.Close()
-	rdata, err := ioutil.ReadAll(resp)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Log(string(rdata))
+	// rdata, err := ioutil.ReadAll(resp)
+	// if err != nil {
+	// 	t.Error(err)
+	// 	return
+	// }
+	// t.Log(string(rdata))
 	durl, err := cli.GetURL(res.ID, 3600)
 	if err != nil {
 		t.Error(err)

@@ -1,14 +1,16 @@
 package filebase
 
 import (
-	"bytes"
 	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/url"
+	"os"
 	"time"
 
 	"pkg.oars.vip/go-pkg/constant"
@@ -79,10 +81,43 @@ func (c *Client) Get(id string) (io.ReadCloser, error) {
 	return req.Req("GET", ustr, nil, c.setAuthHeader(nil))
 }
 
-func (c *Client) Md5(r io.Reader) string {
-	md5h := md5.New()
-	io.Copy(md5h, r)
-	return fmt.Sprintf("%x", md5h.Sum([]byte("")))
+func (c *Client) FileMd5(path string) (string, error) {
+	fs, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	info, err := fs.Stat()
+	if err != nil {
+		return "", err
+	}
+	filesize := info.Size()
+	const filechunk = 4 * 1 << 20
+	blocks := uint64(math.Ceil(float64(filesize) / float64(filechunk)))
+	hash := md5.New()
+	for i := uint64(0); i < blocks; i++ {
+		blocksize := int(math.Min(filechunk, float64(filesize-int64(i*filechunk))))
+		buf := make([]byte, blocksize)
+		fs.Read(buf)
+		io.WriteString(hash, string(buf))
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func (c *Client) FPut(path, parent, name, ext string) (*FileMetadata, error) {
+	digest, err := c.FileMd5(path)
+	if err != nil {
+		return nil, err
+	}
+	fs, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	info, err := fs.Stat()
+	if err != nil {
+		return nil, err
+	}
+	size := info.Size()
+	return c.Put(fs, parent, name, ext, digest, size)
 }
 
 type PutResp struct {
@@ -90,13 +125,10 @@ type PutResp struct {
 	Data *FileMetadata `json:"data"`
 }
 
-func (c *Client) Put(body io.Reader, parent, name, ext string, size int64) (*FileMetadata, error) {
-	var buf bytes.Buffer
-	tr := io.TeeReader(body, &buf)
-	digest := c.Md5(&buf)
+func (c *Client) Put(body io.Reader, parent, name, ext, digest string, size int64) (*FileMetadata, error) {
 	ustr := fmt.Sprintf("%s/filebase/api/v1/app/files?digest=%s&size=%d&parent=%s&name=%s&type=%s",
 		c.cfg.Address, digest, size, parent, name, ext)
-	resp, err := req.Req("POST", ustr, tr, c.setAuthHeader(nil))
+	resp, err := req.Req("POST", ustr, body, c.setAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}
