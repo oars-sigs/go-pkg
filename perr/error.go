@@ -34,6 +34,11 @@ func (e *Error) SetCode(code int) *Error {
 	return e
 }
 
+func (e *Error) SetMsg(msg string) *Error {
+	e.msg = msg
+	return e
+}
+
 func New(msg string) *Error {
 	return &Error{msg: msg}
 }
