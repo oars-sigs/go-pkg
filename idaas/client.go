@@ -65,7 +65,7 @@ func (c *Client) Depts(depts interface{}, tree, useBindPool bool) ([]Department,
 		return depts.Data, err
 	}
 	if deptIds, ok := depts.([]string); ok {
-		urlstr := c.getUrl(fmt.Sprintf("/idaas/api/departmentslist&useBindPool=%v", useBindPool))
+		urlstr := c.getUrl(fmt.Sprintf("/idaas/api/departmentslist?useBindPool=%v", useBindPool))
 		var depts DeptsResp
 		err := req.ReqJSON("POST", urlstr, deptIds, &depts, c.setAuthHeader(nil))
 		if err != nil {
