@@ -51,17 +51,32 @@ type DeptsResp struct {
 	Data []Department `json:"data"`
 }
 
-func (c *Client) Depts(deptId string, tree, useBindPool bool) ([]Department, error) {
-	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/departments?deptId=%s&tree=%v&useBindPool=%v", deptId, tree, useBindPool))
-	var depts DeptsResp
-	err := req.ReqJSON("GET", urlstr, nil, &depts, c.setAuthHeader(nil))
-	if err != nil {
-		return nil, err
+func (c *Client) Depts(depts interface{}, tree, useBindPool bool) ([]Department, error) {
+	if deptId, ok := depts.(string); ok {
+		urlstr := c.getUrl(fmt.Sprintf("/idaas/api/departments?deptId=%s&tree=%v&useBindPool=%v", deptId, tree, useBindPool))
+		var depts DeptsResp
+		err := req.ReqJSON("GET", urlstr, nil, &depts, c.setAuthHeader(nil))
+		if err != nil {
+			return nil, err
+		}
+		if depts.Error.Error() != nil {
+			return nil, err
+		}
+		return depts.Data, err
 	}
-	if depts.Error.Error() != nil {
-		return nil, err
+	if deptIds, ok := depts.([]string); ok {
+		urlstr := c.getUrl(fmt.Sprintf("/idaas/api/departmentslist&useBindPool=%v", useBindPool))
+		var depts DeptsResp
+		err := req.ReqJSON("POST", urlstr, deptIds, &depts, c.setAuthHeader(nil))
+		if err != nil {
+			return nil, err
+		}
+		if depts.Error.Error() != nil {
+			return nil, err
+		}
+		return depts.Data, err
 	}
-	return depts.Data, err
+	return nil, errors.New("depts must string or []string")
 }
 
 type DeptResp struct {
