@@ -1,4 +1,4 @@
-package dist
+package static
 
 import (
 	"embed"
@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Dist(dir, contextPath string, static embed.FS) func(*gin.Context) {
+func WrapHandler(dir, contextPath string, static embed.FS) func(*gin.Context) {
 	return func(g *gin.Context) {
 		path := g.Request.URL.Path
 		s := strings.Split(path, ".")
