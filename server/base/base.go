@@ -9,7 +9,7 @@ import (
 	"pkg.oars.vip/go-pkg/perr"
 )
 
-const (
+var (
 	SuccessCode = 10000
 )
 
