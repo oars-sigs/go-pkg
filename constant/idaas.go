@@ -11,6 +11,7 @@ const (
 	ProxyUserTokenHeader  = "X-Oars-Token"
 	ProxyAppIDHeader      = "X-Oars-App-Id"
 	ProxySidHeader        = "X-Oars-Sid"
+	ProxyAuthKindHeader   = "X-Oars-Auth-Kind"
 	SessionCookieName     = "OARS-IDASS-SESSION"
 	ReqURIHeader          = "XURI"
 	ReqMethodHeader       = "XMETHOD"
@@ -20,4 +21,9 @@ const (
 	OarsAuthKind          = "X-Oars-Auth-Kind"
 	OarsHmacSignatureKind = "Hmac"
 	ExpireTimeKey         = "expireTime"
+)
+
+const (
+	AppAuthKindHeader  = "app"
+	UserAuthKindHeader = "user"
 )
