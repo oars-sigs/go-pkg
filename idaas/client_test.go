@@ -6,9 +6,9 @@ import (
 )
 
 var cfg = &Config{
-	Address:   "https://idaas.oars.gzsunrun.cn",
-	AppID:     "871ac2e3-9451-48ab-8cae-74c35120a419",
-	AppSecret: "Tl0bDXIrL6z6cOn53VgOa2XoxlqIk2B0",
+	Address:   "https://idaas.oars-vm.hashwing.cn",
+	AppID:     "b197a05e-3e4b-4ec4-b1de-c53915a22dca",
+	AppSecret: "tu9iVZ6Hg5AkUjTAMXb6F8uBZZpuYXou",
 }
 
 func TestDepts(t *testing.T) {
