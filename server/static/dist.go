@@ -1,6 +1,7 @@
 package static
 
 import (
+	"bytes"
 	"compress/gzip"
 	"embed"
 	"fmt"
@@ -26,18 +27,28 @@ func init() {
 	}
 }
 
-func WrapHandler(dir, contextPath string, static embed.FS) func(*gin.Context) {
+func WrapHandler(dir, contextPath string, static embed.FS, defaultPath ...string) func(*gin.Context) {
 	return func(g *gin.Context) {
+		defaultContextPath := contextPath
 		path := g.Request.URL.Path
+		if len(defaultPath) > 0 {
+			defaultContextPath = defaultPath[0]
+			path = defaultContextPath + strings.TrimPrefix(path, contextPath)
+		}
 		s := strings.Split(path, ".")
 		contentType := mime.TypeByExtension(fmt.Sprintf(".%s", s[len(s)-1]))
 		sdata, err := static.ReadFile(dir + path)
 		if err != nil {
-			sdata, err = static.ReadFile(dir + contextPath + "/index.html")
+			sdata, err = static.ReadFile(dir + defaultContextPath + "/index.html")
 			contentType = mime.TypeByExtension(".html")
 			if err != nil {
 				g.AbortWithStatus(404)
 				return
+			}
+			if len(defaultPath) > 0 {
+				sdata = bytes.ReplaceAll(sdata, []byte("<head>"), []byte("<head><script>window.OarsContextPath='"+contextPath+"'</script>"))
+				sdata = bytes.ReplaceAll(sdata, []byte("href="+defaultContextPath), []byte("href="+contextPath))
+				sdata = bytes.ReplaceAll(sdata, []byte("src="+defaultContextPath), []byte("src="+contextPath))
 			}
 		}
 		if !strings.Contains(g.GetHeader("Accept-Encoding"), "gzip") {
