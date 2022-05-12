@@ -33,7 +33,9 @@ func WrapHandler(dir, contextPath string, static embed.FS, defaultPath ...string
 		path := g.Request.URL.Path
 		if len(defaultPath) > 0 {
 			defaultContextPath = defaultPath[0]
-			path = defaultContextPath + strings.TrimPrefix(path, contextPath)
+			if defaultContextPath != contextPath {
+				path = defaultContextPath + strings.TrimPrefix(path, contextPath)
+			}
 		}
 		s := strings.Split(path, ".")
 		contentType := mime.TypeByExtension(fmt.Sprintf(".%s", s[len(s)-1]))
@@ -45,7 +47,7 @@ func WrapHandler(dir, contextPath string, static embed.FS, defaultPath ...string
 				g.AbortWithStatus(404)
 				return
 			}
-			if len(defaultPath) > 0 {
+			if defaultContextPath != contextPath {
 				sdata = bytes.ReplaceAll(sdata, []byte("<head>"), []byte("<head><script>window.OarsContextPath='"+contextPath+"'</script>"))
 				sdata = bytes.ReplaceAll(sdata, []byte("href="+defaultContextPath), []byte("href="+contextPath))
 				sdata = bytes.ReplaceAll(sdata, []byte("src="+defaultContextPath), []byte("src="+contextPath))
