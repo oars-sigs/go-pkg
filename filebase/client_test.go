@@ -13,13 +13,13 @@ func TestClient(t *testing.T) {
 	cli := New(cfg)
 
 	path := "D:/vm/iso/ttylinux-pc_i686-16.1.iso"
-	res, err := cli.FPut(path, "", "fedora-coreos-33.20210412.3.0-live.x86_64.iso", "iso")
+	res, err := cli.FPut(path, "app", "", "fedora-coreos-33.20210412.3.0-live.x86_64.iso", "iso")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	t.Log(res.ID, res.Digest)
-	ustr, err := cli.PutURL("", "test.txt", "txt", res.Digest, res.Size, 3600)
+	ustr, err := cli.PutURL("app", "", "test.txt", "txt", res.Digest, res.Size, 3600)
 	if err != nil {
 		t.Error(err)
 		return
@@ -38,7 +38,7 @@ func TestClient(t *testing.T) {
 	// 	return
 	// }
 	// t.Log(string(rdata))
-	durl, err := cli.GetURL(res.ID, 3600)
+	durl, err := cli.GetURL("app", res.ID, 3600)
 	if err != nil {
 		t.Error(err)
 		return

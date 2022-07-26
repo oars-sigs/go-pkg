@@ -45,10 +45,10 @@ func (c *Client) setAuthHeader(headers map[string]string) map[string]string {
 	return headers
 }
 
-func (c *Client) PutURL(parent, name, ext, digest string, size, expireSecond int64) (string, error) {
+func (c *Client) PutURL(namespace, parent, name, ext, digest string, size, expireSecond int64) (string, error) {
 	expireTime := time.Now().Unix() + expireSecond
-	ustr := fmt.Sprintf("%s/filebase/api/v1/app/files?%s=%s&%s=%s&digest=%s&size=%d&parent=%s&name=%s&type=%s&expireTime=%d",
-		c.cfg.Address, constant.OarsAuthKind, constant.OarsHmacSignatureKind, constant.ProxyAppIDHeader, c.cfg.AppID,
+	ustr := fmt.Sprintf("%s/filebase/api/v1/%s/files?%s=%s&%s=%s&digest=%s&size=%d&parent=%s&name=%s&type=%s&expireTime=%d",
+		c.cfg.Address, namespace, constant.OarsAuthKind, constant.OarsHmacSignatureKind, constant.ProxyAppIDHeader, c.cfg.AppID,
 		digest, size, parent, name, ext, expireTime)
 	u, err := url.Parse(ustr)
 	if err != nil {
@@ -61,9 +61,9 @@ func (c *Client) PutURL(parent, name, ext, digest string, size, expireSecond int
 	return u.String(), nil
 }
 
-func (c *Client) GetURL(id string, expireSecond int64) (string, error) {
+func (c *Client) GetURL(namespace, id string, expireSecond int64) (string, error) {
 	expireTime := time.Now().Unix() + expireSecond
-	ustr := fmt.Sprintf("%s/filebase/api/v1/app/files/%s?%s=%s&%s=%s&expireTime=%d", c.cfg.Address, id,
+	ustr := fmt.Sprintf("%s/filebase/api/v1/%s/files/%s?%s=%s&%s=%s&expireTime=%d", c.cfg.Address, namespace, id,
 		constant.OarsAuthKind, constant.OarsHmacSignatureKind, constant.ProxyAppIDHeader, c.cfg.AppID, expireTime)
 	u, err := url.Parse(ustr)
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *Client) FileMd5(path string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (c *Client) FPut(path, parent, name, ext string) (*FileMetadata, error) {
+func (c *Client) FPut(path, namespace, parent, name, ext string) (*FileMetadata, error) {
 	digest, err := c.FileMd5(path)
 	if err != nil {
 		return nil, err
@@ -117,7 +117,7 @@ func (c *Client) FPut(path, parent, name, ext string) (*FileMetadata, error) {
 		return nil, err
 	}
 	size := info.Size()
-	return c.Put(fs, parent, name, ext, digest, size)
+	return c.Put(fs, namespace, parent, name, ext, digest, size)
 }
 
 type PutResp struct {
@@ -125,9 +125,9 @@ type PutResp struct {
 	Data *FileMetadata `json:"data"`
 }
 
-func (c *Client) Put(body io.Reader, parent, name, ext, digest string, size int64) (*FileMetadata, error) {
-	ustr := fmt.Sprintf("%s/filebase/api/v1/app/files?digest=%s&size=%d&parent=%s&name=%s&type=%s",
-		c.cfg.Address, digest, size, parent, name, ext)
+func (c *Client) Put(body io.Reader, namespace, parent, name, ext, digest string, size int64) (*FileMetadata, error) {
+	ustr := fmt.Sprintf("%s/filebase/api/v1/%s/files?digest=%s&size=%d&parent=%s&name=%s&type=%s",
+		c.cfg.Address, namespace, digest, size, parent, name, ext)
 	resp, err := req.Req("POST", ustr, body, c.setAuthHeader(nil))
 	if err != nil {
 		return nil, err
