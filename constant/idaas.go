@@ -21,6 +21,9 @@ const (
 	OarsAuthKind          = "X-Oars-Auth-Kind"
 	OarsHmacSignatureKind = "Hmac"
 	ExpireTimeKey         = "expireTime"
+
+	VisitorUidPrefix = "oars-visitor-"
+	VisitorGroup     = "oars_sys_visitor"
 )
 
 const (

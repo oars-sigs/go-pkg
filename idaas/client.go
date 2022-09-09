@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -189,4 +190,12 @@ func (c *Client) Auth(g *gin.Context) (*TokenInfo, error) {
 		return &u, nil
 	}
 	return nil, errors.New("must auth")
+}
+
+func (c *Client) IsVisitor(g *gin.Context) (bool, error) {
+	uid := g.GetHeader(constant.ProxyUserIDHeader)
+	if uid == "" {
+		return false, perr.ErrUnauthorized
+	}
+	return strings.HasPrefix(uid, constant.VisitorUidPrefix), nil
 }
