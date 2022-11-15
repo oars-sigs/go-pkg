@@ -1,0 +1,372 @@
+package flow
+
+import (
+	"bytes"
+	"reflect"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/mitchellh/mapstructure"
+)
+
+type Task map[string]interface{}
+
+var inKeys = []string{
+	"debug",
+	"when",
+	"stdout",
+	"loop",
+	"sleep",
+	"while",
+	"async",
+	"await",
+	"concurrency",
+	"ignore_error",
+	"switch",
+}
+
+func isInKey(s string) bool {
+	for _, k := range inKeys {
+		if k == s {
+			return true
+		}
+	}
+	return false
+}
+
+var CustomActions sync.Map
+
+func AddCustomActions(key string, action Action) {
+	CustomActions.Store(key, action)
+}
+
+type Action interface {
+	Do(conf *Config, params interface{}) (interface{}, error)
+	Params() interface{}
+}
+
+func (t Task) Action(conf *Config, await *gawait, vars *gvars) (*customAction, error) {
+	res := &customAction{
+		gawait: await,
+		vars:   vars,
+		conf:   conf,
+	}
+	tmd, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		TagName: "yaml",
+		Result:  res,
+	})
+	tmd.Decode(t)
+	for k, v := range t {
+		if !isInKey(k) {
+			if a, ok := CustomActions.Load(k); ok {
+				params := a.(Action).Params()
+				switch reflect.TypeOf(v).Kind() {
+				case reflect.Map:
+					md, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+						TagName: "yaml",
+						Result:  &params,
+					})
+					md.Decode(v)
+				default:
+					params = v
+				}
+
+				res.a = a.(Action)
+				res.params = params
+			}
+		}
+		if k == "tasks" {
+			res.params = getLoopMap(LoopRes{Item: "$.ctx.item", ItemKey: "$.ctx.itemKey"})
+		}
+	}
+	t.SwitchTask(res)
+	t.MultiTasks(res)
+	t.Loop(res)
+	t.While(res)
+	t.Single(res)
+	return res, nil
+}
+
+func (t Task) While(ctxAction *customAction) {
+	s, ok := t["while"]
+	if !ok {
+		return
+	}
+	action := ctxAction.a
+	m := func(conf *Config, params interface{}) (interface{}, error) {
+		var res interface{}
+		var err error
+		i := 0
+		for {
+			if !when(s.(string), ctxAction.vars) {
+				break
+			}
+			parseParams(params, ctxAction.vars.SetCtx(getLoopMap(LoopRes{Item: i})))
+			res, err = ctxAction.runTask(action, conf, params)
+			if err != nil {
+				return nil, err
+			}
+			i++
+		}
+		return res, err
+	}
+	ctxAction.a = &customFuncAction{m, nil}
+}
+
+func (t Task) Loop(ctxAction *customAction) {
+	s, ok := t["loop"]
+	if !ok {
+		return
+	}
+	l := parseParams(s, ctxAction.vars)
+	ls := Loop(l, ctxAction.vars)
+	if len(ls) == 0 {
+		return
+	}
+
+	vn := parseParams(ctxAction.Concurrency, ctxAction.vars)
+	n := int64(1)
+	if m, ok := vn.(int64); ok && m > 1 {
+		n = m
+	}
+	action := ctxAction.a
+	m := func(conf *Config, params interface{}) (interface{}, error) {
+		var res interface{}
+		var err error
+
+		var cwg sync.WaitGroup
+		cwg.Add(len(ls))
+		conc := make(chan struct{}, n)
+		for _, item := range ls {
+			p := parseParams(params, ctxAction.vars.SetCtx(getLoopMap(item)))
+			conc <- struct{}{}
+			go func(p interface{}) {
+				defer func() {
+					cwg.Done()
+					<-conc
+				}()
+				res, err = ctxAction.runTask(action, conf, p)
+			}(p)
+		}
+		cwg.Wait()
+		return res, err
+	}
+	ctxAction.a = &customFuncAction{m, nil}
+}
+
+func (t Task) MultiTasks(ctxAction *customAction) {
+	if len(ctxAction.Tasks) == 0 {
+		return
+	}
+	m := func(conf *Config, params interface{}) (interface{}, error) {
+		playbook := &Playbook{
+			Tasks: ctxAction.Tasks,
+		}
+		config := &Config{
+			Workdir: ctxAction.conf.Workdir,
+			Next:    playbook.next,
+		}
+		err := playbook.Run(config, ctxAction.gawait, ctxAction.vars.SetCtx(params))
+		// for _, task := range ctxAction.Tasks {
+		// 	c, err := task.Action(ctxAction.conf, ctxAction.gawait, ctxAction.vars.SetCtx(params))
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		// 	res, err := c.Do()
+		// 	if err != nil {
+		// 		return res, nil
+		// 	}
+		// }
+		return nil, err
+	}
+	ctxAction.a = &customFuncAction{m, nil}
+}
+
+func (t Task) SwitchTask(ctxAction *customAction) {
+	if ctxAction.Switch == nil {
+		return
+	}
+	var res interface{}
+	var err error
+	m := func(conf *Config, params interface{}) (interface{}, error) {
+		key := parseParams(ctxAction.Switch.Key, ctxAction.vars).(string)
+		if len(ctxAction.Switch.Tasks) != 0 {
+			for skey, tasks := range ctxAction.Switch.Tasks {
+				if skey == key {
+					for _, task := range tasks {
+						c, err := task.Action(ctxAction.conf, ctxAction.gawait, ctxAction.vars.SetCtx(params))
+						if err != nil {
+							return nil, err
+						}
+						res, err := c.Do()
+						if err != nil {
+							return res, nil
+						}
+					}
+				}
+			}
+		}
+		if len(ctxAction.Switch.Task) != 0 && conf.Next != nil {
+			for skey, id := range ctxAction.Switch.Task {
+				if skey == key {
+					return conf.Next(id, ctxAction.conf, ctxAction.gawait, ctxAction.vars)
+				}
+			}
+		}
+		return res, err
+	}
+	ctxAction.a = &customFuncAction{m, nil}
+}
+
+func (t Task) Single(ctxAction *customAction) {
+	if _, ok := t["loop"]; ok {
+		return
+	}
+	if _, ok := t["while"]; ok {
+		return
+	}
+	if _, ok := t["tasks"]; ok {
+		return
+	}
+	if _, ok := t["switch"]; ok {
+		return
+	}
+	action := ctxAction.a
+	m := func(conf *Config, params interface{}) (interface{}, error) {
+		params = parseParams(params, ctxAction.vars)
+		return action.Do(conf, params)
+	}
+	ctxAction.a = &customFuncAction{m, nil}
+}
+
+type customAction struct {
+	a           Action
+	conf        *Config
+	params      interface{}
+	vars        *gvars
+	gawait      *gawait
+	When        string      `yaml:"when"`
+	Async       string      `yaml:"async"`
+	Await       []string    `yaml:"await"`
+	IgnoreErr   bool        `yaml:"ignoreErr"`
+	Concurrency interface{} `yaml:"concurrency"`
+	Sleep       int64       `yaml:"sleep"`
+	Tasks       []Task      `yaml:"tasks"`
+	Switch      *Switch     `yaml:"switch"`
+	Output      string      `yaml:"output"`
+}
+
+type Switch struct {
+	Key   string            `yaml:"key"`
+	Tasks map[string][]Task `yaml:"tasks"`
+	Task  map[string]string `yaml:"task"`
+}
+
+func (a *customAction) Do() (interface{}, error) {
+	if a.When != "" {
+		if !when(a.When, a.vars) {
+			return nil, nil
+		}
+	}
+	conf := a.conf
+	params := a.params
+	if len(a.Await) > 0 {
+		err := a.gawait.Await(a.Await, a.IgnoreErr)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if a.Async != "" {
+		go func(conf *Config, params interface{}) {
+			a.gawait.AddAwait(a.Async)
+			_, err := a.runTask(a.a, conf, params)
+			a.gawait.DoneAwait(a.Async, err)
+		}(conf, params)
+		return nil, nil
+	}
+	res, err := a.runTask(a.a, conf, params)
+	if a.Sleep > 0 {
+		time.Sleep(time.Second * time.Duration(a.Sleep))
+	}
+
+	return res, err
+}
+
+func (a *customAction) runTask(act Action, conf *Config, params interface{}) (interface{}, error) {
+	res, err := act.Do(conf, params)
+	if a.IgnoreErr {
+		return res, nil
+	}
+	if a.Output != "" {
+		a.vars.SetVar(strings.TrimPrefix(a.Output, "$."), res)
+	}
+	return res, err
+}
+
+type customFuncAction struct {
+	m      func(conf *Config, params interface{}) (interface{}, error)
+	params interface{}
+}
+
+func (a *customFuncAction) Do(conf *Config, params interface{}) (interface{}, error) {
+	return a.m(conf, params)
+}
+
+func (a *customFuncAction) Params() interface{} {
+	return a.params
+}
+
+func parseParams(ctxv interface{}, vars *gvars) interface{} {
+	if ctxv == nil {
+		return ctxv
+	}
+	switch reflect.TypeOf(ctxv).Kind() {
+	case reflect.String:
+		s := ctxv.(string)
+		if strings.HasPrefix(s, "$.") {
+			p, _ := vars.GetVar(strings.TrimPrefix(s, "$."))
+			return p
+		}
+		ss, _ := parseTpl(s, vars)
+		return ss
+	case reflect.Map:
+		v := reflect.ValueOf(ctxv)
+		res := make(map[string]interface{})
+		for _, k := range v.MapKeys() {
+			res[k.Interface().(string)] = parseParams(v.MapIndex(k).Interface(), vars)
+		}
+		return res
+	case reflect.Slice:
+		v := reflect.ValueOf(ctxv)
+		res := make([]interface{}, 0)
+		for i := 0; i < v.Len(); i++ {
+			res = append(res, parseParams(v.Index(i).Interface(), vars))
+		}
+		return res
+	case reflect.Int64:
+		s := ctxv.(int64)
+		return s
+	case reflect.Float64:
+		s := ctxv.(float64)
+		return s
+	}
+	return ctxv
+}
+
+func parseTpl(tpl string, vars *gvars) (string, error) {
+	tmpl, err := newTpl().Parse(tpl)
+	if err != nil {
+		return "", err
+	}
+	var b bytes.Buffer
+	err = tmpl.Execute(&b, vars.Vars())
+	if err != nil {
+		return "", err
+	}
+	v := b.String()
+	if v == "<no value>" {
+		return "", nil
+	}
+	return v, err
+}

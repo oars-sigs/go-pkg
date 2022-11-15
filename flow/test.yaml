@@ -1,0 +1,31 @@
+vars: {
+  values: {}
+}
+tasks:
+- id: "1"
+  sum: 
+    x: 1
+    "y": 12
+  output: "$.values.res"
+- id: "2"
+  print: "$.values.res"
+- id: "3"
+  async: "a"
+  tasks:
+    - id: "1"
+      print: "3-1"
+    - id: "2"
+      print: "3-2"
+      sleep: 5
+    # - id: "3"
+    #   switch:
+    #     key: a
+    #     task:
+    #       a: "2"
+    - id: "4"
+      print: "3-4"
+- id: "4"
+  print: "4***************"
+- id: "5"
+  print: "444"
+  await: ["a"]
