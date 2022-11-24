@@ -6,7 +6,7 @@ import (
 	"github.com/antonmedv/expr"
 )
 
-func Eval(s string, vars *gvars) (interface{}, error) {
+func Eval(s string, vars *Gvars) (interface{}, error) {
 	envs := vars.Vars()
 	envs["getOne"] = getOne
 	return expr.Eval(s, envs)

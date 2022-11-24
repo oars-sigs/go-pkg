@@ -1,31 +1,52 @@
-vars: {
-  values: {}
-}
+values: 
+  aa: 2
+modules:
+  - name: d
+    tasks:
+    - print: $.values.bb
+    - sum:
+        x: $.values.aa
+        "y":  $.values.bb
+      output: $.values.res
+    output: $.values.res
 tasks:
-- id: "1"
-  sum: 
-    x: 1
-    "y": 12
-  output: "$.values.res"
-- id: "2"
-  print: "$.values.res"
-- id: "3"
-  async: "a"
-  tasks:
-    - id: "1"
-      print: "3-1"
-    - id: "2"
-      print: "3-2"
-      sleep: 5
-    # - id: "3"
-    #   switch:
-    #     key: a
-    #     task:
-    #       a: "2"
-    - id: "4"
-      print: "3-4"
-- id: "4"
-  print: "4***************"
-- id: "5"
-  print: "444"
-  await: ["a"]
+  - d: 
+      aa: 112.5
+      bb: $.ctx.item
+    output: $.values.a
+    loop: 
+    - 1
+    - 2
+  - print: $.values
+  # - id: "1"
+  #   sum: 
+  #     x: $.values.aa
+  #     "y": 12
+  #   output: "$.values.res"
+  # - id: "2"
+  #   print: "$.values.res"
+  # - id: "3"
+  #   async: "a"
+  #   tasks:
+  #     - id: "1"
+  #       print: "3-1"
+  #     - id: "2"
+  #       print: "3-2"
+  #       sleep: 2
+  #     - id: "3"
+  #       switch:
+  #         key: a
+  #         task:
+  #           a: "1"
+  #     # - id: "4"
+  #     #   print: "3-4"
+  # - id: "4"
+  #   tasks: 
+  #   - print: $.ctx.item
+  #   - print: $.ctx.itemKey
+  #   loop:
+  #     a: 1
+  #     b: 2
+  # - id: "5"
+  #   print: "444"
+  #   await: ["a"]

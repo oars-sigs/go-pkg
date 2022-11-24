@@ -2,5 +2,5 @@ package flow
 
 type Config struct {
 	Workdir string
-	Next    func(id string, conf *Config, await *gawait, vars *gvars) (interface{}, error)
+	Next    func(id string, conf *Config, vars *Gvars) (interface{}, error)
 }

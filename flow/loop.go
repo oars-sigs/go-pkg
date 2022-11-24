@@ -2,7 +2,7 @@ package flow
 
 import "reflect"
 
-func Loop(loop interface{}, vars *gvars) []LoopRes {
+func Loop(loop interface{}, vars *Gvars) []LoopRes {
 	switch reflect.TypeOf(loop).Kind() {
 	case reflect.Slice:
 		res := make([]LoopRes, 0)

@@ -9,25 +9,28 @@ import (
 
 type Vars struct {
 	Values map[string]interface{}
-	Ctx    interface{}
+	Ctx    map[string]interface{}
 }
 
-type gvars struct {
+type Gvars struct {
 	data  *Vars
 	mutex *sync.Mutex
 }
 
-func newGvars(v *Vars) *gvars {
-	return &gvars{
+func NewGvars(v *Vars) *Gvars {
+	return &Gvars{
 		data:  v,
 		mutex: new(sync.Mutex),
 	}
 }
 
-func (p *gvars) SetCtx(ctx interface{}) *gvars {
+func (p *Gvars) SetCtx(ctx map[string]interface{}) *Gvars {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	return &gvars{
+	for k, v := range p.data.Ctx {
+		ctx[k] = v
+	}
+	return &Gvars{
 		data: &Vars{
 			Values: p.data.Values,
 			Ctx:    ctx,
@@ -36,7 +39,7 @@ func (p *gvars) SetCtx(ctx interface{}) *gvars {
 	}
 }
 
-func (p *gvars) Vars() map[string]interface{} {
+func (p *Gvars) Vars() map[string]interface{} {
 	res := make(map[string]interface{})
 	vars := p.data
 	res["values"] = dyno.ConvertMapI2MapS(vars.Values)
@@ -44,7 +47,7 @@ func (p *gvars) Vars() map[string]interface{} {
 	return res
 }
 
-func (p *gvars) GetVar(s string) (interface{}, bool) {
+func (p *Gvars) GetVar(s string) (interface{}, bool) {
 	vars := p.data
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -56,9 +59,7 @@ func (p *gvars) GetVar(s string) (interface{}, bool) {
 		case "values":
 			p = vars.Values
 		case "ctx":
-			if c, ok := vars.Ctx.(map[string]interface{}); ok {
-				p = c
-			}
+			p = vars.Ctx
 		default:
 			return nil, false
 		}
@@ -89,7 +90,7 @@ func (p *gvars) GetVar(s string) (interface{}, bool) {
 	return nil, false
 }
 
-func (p *gvars) SetVar(s string, value interface{}) {
+func (p *Gvars) SetVar(s string, value interface{}) {
 	vars := p.data
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -101,9 +102,7 @@ func (p *gvars) SetVar(s string, value interface{}) {
 		case "values":
 			p = vars.Values
 		case "ctx":
-			if c, ok := vars.Ctx.(map[string]interface{}); ok {
-				p = c
-			}
+			p = vars.Ctx
 		default:
 			return
 		}

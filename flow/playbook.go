@@ -18,29 +18,47 @@ func Run(path string) error {
 		return err
 	}
 	conf := &Config{
-		Next: p.next,
+		Next: p.Next,
 	}
-	return p.Run(conf, newAwait(), newGvars(&p.Vars))
+	if p.Values == nil {
+		p.Values = make(map[string]interface{})
+	}
+	vars := &Vars{
+		Values: p.Values,
+		Ctx:    make(map[string]interface{}),
+	}
+	p.gvars = NewGvars(vars)
+	for _, m := range p.Modules {
+		AddCustomActions(m.Name, &m)
+	}
+	AddCustomActions("print", new(PrintAction))
+	return p.Run(conf)
 }
 
 type Playbook struct {
-	Tasks []Task `yaml:"tasks"`
-	Vars  Vars   `yaml:"vars"`
-	index int
+	Tasks   []Task                 `yaml:"tasks"`
+	Values  map[string]interface{} `yaml:"values"`
+	Modules []Module               `yaml:"modules"`
+	gvars   *Gvars
+	index   int
+	await   *gawait
 }
 
-func (p *Playbook) Run(conf *Config, await *gawait, vars *gvars) error {
-	// conf := &Config{
-	// 	Next: p.next,
-	// }
-	// await := newAwait()
-	// vars := newGvars(&Vars{})
+func NewPlaybook(tasks []Task, vars *Gvars) *Playbook {
+	return &Playbook{
+		Tasks: tasks,
+		gvars: vars,
+		await: newAwait(),
+	}
+}
+
+func (p *Playbook) Run(conf *Config) error {
 	for {
 		if p.index == len(p.Tasks) {
 			break
 		}
 		t := p.Tasks[p.index]
-		c, err := t.Action(conf, await, vars)
+		c, err := t.Action(conf, p.await, p.gvars)
 		if err != nil {
 			return err
 		}
@@ -54,13 +72,13 @@ func (p *Playbook) Run(conf *Config, await *gawait, vars *gvars) error {
 
 }
 
-func (p *Playbook) next(id string, conf *Config, await *gawait, vars *gvars) (interface{}, error) {
+func (p *Playbook) Next(id string, conf *Config, vars *Gvars) (interface{}, error) {
 	task, index, err := p.getTask(id)
 	if err != nil {
 		return nil, err
 	}
 	p.index = index
-	c, err := task.Action(conf, await, vars)
+	c, err := task.Action(conf, p.await, vars)
 	if err != nil {
 		return nil, err
 	}

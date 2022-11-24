@@ -1,6 +1,6 @@
 package flow
 
-func when(s string, vars *gvars) bool {
+func when(s string, vars *Gvars) bool {
 	res, err := Eval(s, vars)
 	if err != nil {
 		return false

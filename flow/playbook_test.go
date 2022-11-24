@@ -15,8 +15,8 @@ func TestPlaybook(t *testing.T) {
 }
 
 type Sum struct {
-	X int64 `yaml:"x"`
-	Y int64 `yaml:"y"`
+	X float64 `yaml:"x"`
+	Y float64 `yaml:"y"`
 }
 
 func (a *Sum) Do(conf *Config, params interface{}) (interface{}, error) {
@@ -25,4 +25,8 @@ func (a *Sum) Do(conf *Config, params interface{}) (interface{}, error) {
 }
 func (a *Sum) Params() interface{} {
 	return Sum{}
+}
+
+func (a *Sum) Scheme() string {
+	return ""
 }

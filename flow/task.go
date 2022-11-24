@@ -44,9 +44,10 @@ func AddCustomActions(key string, action Action) {
 type Action interface {
 	Do(conf *Config, params interface{}) (interface{}, error)
 	Params() interface{}
+	Scheme() string
 }
 
-func (t Task) Action(conf *Config, await *gawait, vars *gvars) (*customAction, error) {
+func (t Task) Action(conf *Config, await *gawait, vars *Gvars) (*customAction, error) {
 	res := &customAction{
 		gawait: await,
 		vars:   vars,
@@ -60,20 +61,8 @@ func (t Task) Action(conf *Config, await *gawait, vars *gvars) (*customAction, e
 	for k, v := range t {
 		if !isInKey(k) {
 			if a, ok := CustomActions.Load(k); ok {
-				params := a.(Action).Params()
-				switch reflect.TypeOf(v).Kind() {
-				case reflect.Map:
-					md, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-						TagName: "yaml",
-						Result:  &params,
-					})
-					md.Decode(v)
-				default:
-					params = v
-				}
-
 				res.a = a.(Action)
-				res.params = params
+				res.params = v
 			}
 		}
 		if k == "tasks" {
@@ -111,7 +100,7 @@ func (t Task) While(ctxAction *customAction) {
 		}
 		return res, err
 	}
-	ctxAction.a = &customFuncAction{m, nil}
+	ctxAction.a = &customFuncAction{m, ctxAction.a.Params()}
 }
 
 func (t Task) Loop(ctxAction *customAction) {
@@ -152,7 +141,7 @@ func (t Task) Loop(ctxAction *customAction) {
 		cwg.Wait()
 		return res, err
 	}
-	ctxAction.a = &customFuncAction{m, nil}
+	ctxAction.a = &customFuncAction{m, ctxAction.a.Params()}
 }
 
 func (t Task) MultiTasks(ctxAction *customAction) {
@@ -160,24 +149,13 @@ func (t Task) MultiTasks(ctxAction *customAction) {
 		return
 	}
 	m := func(conf *Config, params interface{}) (interface{}, error) {
-		playbook := &Playbook{
-			Tasks: ctxAction.Tasks,
-		}
+		gv := ctxAction.vars.SetCtx(params.(map[string]interface{}))
+		playbook := NewPlaybook(ctxAction.Tasks, gv)
 		config := &Config{
 			Workdir: ctxAction.conf.Workdir,
-			Next:    playbook.next,
+			Next:    playbook.Next,
 		}
-		err := playbook.Run(config, ctxAction.gawait, ctxAction.vars.SetCtx(params))
-		// for _, task := range ctxAction.Tasks {
-		// 	c, err := task.Action(ctxAction.conf, ctxAction.gawait, ctxAction.vars.SetCtx(params))
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// 	res, err := c.Do()
-		// 	if err != nil {
-		// 		return res, nil
-		// 	}
-		// }
+		err := playbook.Run(config)
 		return nil, err
 	}
 	ctxAction.a = &customFuncAction{m, nil}
@@ -191,26 +169,10 @@ func (t Task) SwitchTask(ctxAction *customAction) {
 	var err error
 	m := func(conf *Config, params interface{}) (interface{}, error) {
 		key := parseParams(ctxAction.Switch.Key, ctxAction.vars).(string)
-		if len(ctxAction.Switch.Tasks) != 0 {
-			for skey, tasks := range ctxAction.Switch.Tasks {
-				if skey == key {
-					for _, task := range tasks {
-						c, err := task.Action(ctxAction.conf, ctxAction.gawait, ctxAction.vars.SetCtx(params))
-						if err != nil {
-							return nil, err
-						}
-						res, err := c.Do()
-						if err != nil {
-							return res, nil
-						}
-					}
-				}
-			}
-		}
 		if len(ctxAction.Switch.Task) != 0 && conf.Next != nil {
 			for skey, id := range ctxAction.Switch.Task {
 				if skey == key {
-					return conf.Next(id, ctxAction.conf, ctxAction.gawait, ctxAction.vars)
+					return conf.Next(id, ctxAction.conf, ctxAction.vars)
 				}
 			}
 		}
@@ -235,16 +197,16 @@ func (t Task) Single(ctxAction *customAction) {
 	action := ctxAction.a
 	m := func(conf *Config, params interface{}) (interface{}, error) {
 		params = parseParams(params, ctxAction.vars)
-		return action.Do(conf, params)
+		return ctxAction.runTask(action, conf, params)
 	}
-	ctxAction.a = &customFuncAction{m, nil}
+	ctxAction.a = &customFuncAction{m, ctxAction.a.Params()}
 }
 
 type customAction struct {
 	a           Action
 	conf        *Config
 	params      interface{}
-	vars        *gvars
+	vars        *Gvars
 	gawait      *gawait
 	When        string      `yaml:"when"`
 	Async       string      `yaml:"async"`
@@ -294,7 +256,22 @@ func (a *customAction) Do() (interface{}, error) {
 }
 
 func (a *customAction) runTask(act Action, conf *Config, params interface{}) (interface{}, error) {
-	res, err := act.Do(conf, params)
+	aparams := act.Params()
+	if _, ok := act.(*customFuncAction); !ok && aparams != nil {
+		switch reflect.TypeOf(params).Kind() {
+		case reflect.Map:
+			md, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+				TagName: "yaml",
+				Result:  &aparams,
+			})
+			md.Decode(params)
+		default:
+			aparams = params
+		}
+	} else {
+		aparams = params
+	}
+	res, err := act.Do(conf, aparams)
 	if a.IgnoreErr {
 		return res, nil
 	}
@@ -316,8 +293,11 @@ func (a *customFuncAction) Do(conf *Config, params interface{}) (interface{}, er
 func (a *customFuncAction) Params() interface{} {
 	return a.params
 }
+func (a *customFuncAction) Scheme() string {
+	return ""
+}
 
-func parseParams(ctxv interface{}, vars *gvars) interface{} {
+func parseParams(ctxv interface{}, vars *Gvars) interface{} {
 	if ctxv == nil {
 		return ctxv
 	}
@@ -354,7 +334,7 @@ func parseParams(ctxv interface{}, vars *gvars) interface{} {
 	return ctxv
 }
 
-func parseTpl(tpl string, vars *gvars) (string, error) {
+func parseTpl(tpl string, vars *Gvars) (string, error) {
 	tmpl, err := newTpl().Parse(tpl)
 	if err != nil {
 		return "", err
