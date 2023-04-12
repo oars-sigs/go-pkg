@@ -16,6 +16,7 @@ type FileMetadata struct {
 	Main      int    `gorm:"column:file_main" json:"main"`
 	Created   int64  `gorm:"column:file_created" json:"created"`
 	Updated   int64  `gorm:"column:file_updated" json:"updated"`
+	DirPath   string `gorm:"-" json:"dirPath"`
 }
 
 const (
@@ -29,6 +30,23 @@ const (
 	NamespaceActionMgr   = "mgr"
 	NamespaceActionRead  = "r"
 	NamespaceActionWrite = "w"
+)
+
+const (
+	FileKind = "file"
+	DirKind  = "dir"
+	LinkKind = "link"
+
+	MainVersion  = 1
+	MinorVersion = 2
+
+	NormalStatus = "1"
+	DeleteStatus = "2"
+	ExistStatus  = "3"
+
+	FilePrivate  = 1
+	FileInternal = 2
+	FilePublic   = 3
 )
 
 //Namespace 项目

@@ -25,6 +25,8 @@ type Config struct {
 	AppID string
 	//AppSecret 应用secret
 	AppSecret string
+
+	SessionToken string
 }
 
 //Client filebase client
@@ -40,8 +42,13 @@ func (c *Client) setAuthHeader(headers map[string]string) map[string]string {
 	if headers == nil {
 		headers = make(map[string]string)
 	}
-	headers[constant.ProxyAppIDHeader] = c.cfg.AppID
-	headers[constant.SessionHeader] = "App " + base64.StdEncoding.EncodeToString([]byte(c.cfg.AppID+":"+c.cfg.AppSecret))
+	if c.cfg.AppID != "" {
+		headers[constant.ProxyAppIDHeader] = c.cfg.AppID
+		headers[constant.SessionHeader] = "App " + base64.StdEncoding.EncodeToString([]byte(c.cfg.AppID+":"+c.cfg.AppSecret))
+	}
+	if c.cfg.SessionToken != "" {
+		headers[constant.SessionHeader] = "Session " + c.cfg.SessionToken
+	}
 	return headers
 }
 
@@ -146,4 +153,48 @@ func (c *Client) Put(body io.Reader, namespace, parent, name, ext, digest string
 		return nil, res.Error.Error()
 	}
 	return res.Data, nil
+}
+
+type FileInfo struct {
+	MD5  string `json:"md5"`
+	Size int64  `json:"size"`
+	Name string `json:"name"`
+}
+
+func (c *Client) FileInfo(path string) (*FileInfo, error) {
+	fs, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	info, err := fs.Stat()
+	if err != nil {
+		return nil, err
+	}
+	filesize := info.Size()
+	const filechunk = 4 * 1 << 20
+	blocks := uint64(math.Ceil(float64(filesize) / float64(filechunk)))
+	hash := md5.New()
+	for i := uint64(0); i < blocks; i++ {
+		blocksize := int(math.Min(filechunk, float64(filesize-int64(i*filechunk))))
+		buf := make([]byte, blocksize)
+		fs.Read(buf)
+		io.WriteString(hash, string(buf))
+	}
+	fi := FileInfo{
+		Name: info.Name(),
+		Size: info.Size(),
+		MD5:  hex.EncodeToString(hash.Sum(nil)),
+	}
+	return &fi, nil
+}
+
+func (c *Client) CreateFile(f *FileMetadata) (*FileMetadata, error) {
+	ustr := fmt.Sprintf("%s/filebase/api/v1/%s/metadatas", c.cfg.Address, f.Namespace)
+	fmt.Println(ustr)
+	var out PutResp
+	err := req.ReqJSON("POST", ustr, f, &out, c.setAuthHeader(nil))
+	if err != nil {
+		return nil, err
+	}
+	return out.Data, nil
 }

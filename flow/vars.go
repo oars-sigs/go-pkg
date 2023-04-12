@@ -40,6 +40,8 @@ func (p *Gvars) SetCtx(ctx map[string]interface{}) *Gvars {
 }
 
 func (p *Gvars) Vars() map[string]interface{} {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	res := make(map[string]interface{})
 	vars := p.data
 	res["values"] = dyno.ConvertMapI2MapS(vars.Values)

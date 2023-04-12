@@ -340,7 +340,10 @@ func parseTpl(tpl string, vars *Gvars) (string, error) {
 		return "", err
 	}
 	var b bytes.Buffer
-	err = tmpl.Execute(&b, vars.Vars())
+	data := vars.Vars()
+	vars.mutex.Lock()
+	defer vars.mutex.Unlock()
+	err = tmpl.Execute(&b, data)
 	if err != nil {
 		return "", err
 	}

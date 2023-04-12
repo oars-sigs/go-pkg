@@ -10,14 +10,20 @@ modules:
       output: $.values.res
     output: $.values.res
 tasks:
-  - d: 
-      aa: 112.5
-      bb: $.ctx.item
-    output: $.values.a
-    loop: 
-    - 1
-    - 2
-  - print: $.values
+  # - d: 
+  #     aa: 112.5
+  #     bb: $.ctx.item
+  #   output: $.values.a
+  #   loop: 
+  #   - 1
+  #   - 2
+  # - print: $.values
+  - tasks:
+    - sum:
+        x: 1
+        "y": 1
+      output: $.values.a
+  - print: $.values.a
   # - id: "1"
   #   sum: 
   #     x: $.values.aa

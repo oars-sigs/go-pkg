@@ -9,6 +9,8 @@ import (
 func Eval(s string, vars *Gvars) (interface{}, error) {
 	envs := vars.Vars()
 	envs["getOne"] = getOne
+	vars.mutex.Lock()
+	defer vars.mutex.Unlock()
 	return expr.Eval(s, envs)
 }
 
