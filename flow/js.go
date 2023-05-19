@@ -2,6 +2,7 @@ package flow
 
 import (
 	"fmt"
+	"io/ioutil"
 
 	"github.com/dop251/goja"
 )
@@ -25,6 +26,7 @@ func JSSet(n, k string, v interface{}) {
 type JsAction struct {
 	Script string      `yaml:"script"`
 	Input  interface{} `yaml:"args"`
+	File   string      `yaml:"file"`
 }
 
 func (a *JsAction) Do(conf *Config, params interface{}) (interface{}, error) {
@@ -37,6 +39,13 @@ func (a *JsAction) Do(conf *Config, params interface{}) (interface{}, error) {
 	})
 	for k, v := range JsFunMap {
 		jsvm.Set(k, v)
+	}
+	if args.File != "" {
+		data, err := ioutil.ReadFile(args.File)
+		if err != nil {
+			return nil, err
+		}
+		args.Script = string(data)
 	}
 	_, err := jsvm.RunString(args.Script)
 	if err != nil {
