@@ -21,9 +21,27 @@ tasks:
   - tasks:
     - sum:
         x: 1
-        "y": 1
+        "y": 3
       output: $.values.a
+      sync: c
+    - print: $.values.a
+    - print: out2:{{.values.a}}
+      await: ["c"]
+    async: a
   - print: $.values.a
+  - print: $.values.a
+  - print: $.values.a
+    await: ["a"]
+  - print: $.values.a
+  - print: $.values.a
+  - js:
+      script: |
+        console.log(sys.args.a)
+        sys.output(sys.args.a+1)
+      args: 
+        a: $.values.a
+    output: $.values.b
+  - print: $.values
   # - id: "1"
   #   sum: 
   #     x: $.values.aa

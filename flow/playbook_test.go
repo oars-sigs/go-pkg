@@ -8,6 +8,7 @@ func TestPlaybook(t *testing.T) {
 	printAct := PrintAction("")
 	AddCustomActions("print", &printAct)
 	AddCustomActions("sum", new(Sum))
+	AddCustomActions("js", new(JsAction))
 	err := Run("test.yaml")
 	if err != nil {
 		t.Fatal(err)

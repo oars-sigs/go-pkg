@@ -240,8 +240,8 @@ func (a *customAction) Do() (interface{}, error) {
 		}
 	}
 	if a.Async != "" {
+		a.gawait.AddAwait(a.Async)
 		go func(conf *Config, params interface{}) {
-			a.gawait.AddAwait(a.Async)
 			_, err := a.runTask(a.a, conf, params)
 			a.gawait.DoneAwait(a.Async, err)
 		}(conf, params)

@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"encoding/json"
 	"strings"
 	"sync"
 
@@ -44,8 +45,8 @@ func (p *Gvars) Vars() map[string]interface{} {
 	defer p.mutex.Unlock()
 	res := make(map[string]interface{})
 	vars := p.data
-	res["values"] = dyno.ConvertMapI2MapS(vars.Values)
-	res["ctx"] = vars.Ctx
+	res["values"] = mapcopy(vars.Values)
+	res["ctx"] = mapcopy(vars.Ctx)
 	return res
 }
 
@@ -59,9 +60,9 @@ func (p *Gvars) GetVar(s string) (interface{}, bool) {
 		var p map[string]interface{}
 		switch rs[0] {
 		case "values":
-			p = vars.Values
+			p = mapcopy(vars.Values).(map[string]interface{})
 		case "ctx":
-			p = vars.Ctx
+			p = mapcopy(vars.Ctx).(map[string]interface{})
 		default:
 			return nil, false
 		}
@@ -134,4 +135,14 @@ func mapconv(s map[interface{}]interface{}) map[string]interface{} {
 		res[k.(string)] = v
 	}
 	return res
+}
+
+func mapcopy(v interface{}) interface{} {
+	d, _ := json.Marshal(v)
+	if _, ok := v.(map[string]interface{}); ok {
+		var res map[string]interface{}
+		json.Unmarshal(d, &res)
+		return dyno.ConvertMapI2MapS(res)
+	}
+	return v
 }

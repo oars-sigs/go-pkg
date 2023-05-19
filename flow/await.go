@@ -7,7 +7,9 @@ type gawait struct {
 }
 
 func newAwait() *gawait {
-	return &gawait{}
+	return &gawait{
+		m: sync.Map{},
+	}
 }
 
 func (w *gawait) Await(ss []string, ignore bool) error {

@@ -17,8 +17,10 @@ func Run(path string) error {
 	if err != nil {
 		return err
 	}
+	p.await = newAwait()
 	conf := &Config{
-		Next: p.Next,
+		Next:    p.Next,
+		Workdir: ".",
 	}
 	if p.Values == nil {
 		p.Values = make(map[string]interface{})

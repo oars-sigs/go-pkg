@@ -20,7 +20,7 @@ func TestTask(t *testing.T) {
 	// 	"print": "ssss{{ .ctx.item }}",
 	// 	"loop":  []string{"a", "b"},
 	// }
-	c, err := task.Action(nil, newAwait(), NewGvars(&Vars{}))
+	c, err := task.Action(&Config{}, newAwait(), NewGvars(&Vars{}))
 	if err != nil {
 		t.Fatal(err)
 		return
