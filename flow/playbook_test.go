@@ -9,6 +9,7 @@ func TestPlaybook(t *testing.T) {
 	AddCustomActions("print", &printAct)
 	AddCustomActions("sum", new(Sum))
 	AddCustomActions("js", new(JsAction))
+	AddCustomActions("server", new(ServerAction))
 	err := Run("test.yaml")
 	if err != nil {
 		t.Fatal(err)

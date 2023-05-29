@@ -10,6 +10,20 @@ modules:
       output: $.values.res
     output: $.values.res
 tasks:
+  - print: $.values.aa
+  - server:
+      port: 9898
+      routes:
+        - method: GET
+          path: "/a"
+          file: task.yaml
+          tasks:
+          - print: $$.ctx
+          - sum:
+              x: 1
+              "y": 1
+            output: $$.ctx.resp
+          - print: $$.ctx.resp
   # - d: 
   #     aa: 112.5
   #     bb: $.ctx.item

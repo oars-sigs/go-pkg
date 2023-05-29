@@ -304,6 +304,9 @@ func parseParams(ctxv interface{}, vars *Gvars) interface{} {
 	switch reflect.TypeOf(ctxv).Kind() {
 	case reflect.String:
 		s := ctxv.(string)
+		if strings.HasPrefix(s, "$$") {
+			return strings.TrimPrefix(s, "$")
+		}
 		if strings.HasPrefix(s, "$.") {
 			p, _ := vars.GetVar(strings.TrimPrefix(s, "$."))
 			return p
