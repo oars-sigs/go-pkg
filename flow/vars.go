@@ -138,7 +138,12 @@ func mapconv(s map[interface{}]interface{}) map[string]interface{} {
 }
 
 func mapcopy(v interface{}) interface{} {
-	d, _ := json.Marshal(v)
+	d, _ := json.Marshal(dyno.ConvertMapI2MapS(v))
+	if _, ok := v.(map[interface{}]interface{}); ok {
+		var res map[string]interface{}
+		json.Unmarshal(d, &res)
+		return dyno.ConvertMapI2MapS(res)
+	}
 	if _, ok := v.(map[string]interface{}); ok {
 		var res map[string]interface{}
 		json.Unmarshal(d, &res)

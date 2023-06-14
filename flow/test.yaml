@@ -1,33 +1,35 @@
 values: 
   aa: 2
-modules:
-  - name: d
-    tasks:
-    - print: $.values.bb
-    - sum:
-        x: $.values.aa
-        "y":  $.values.bb
-      output: $.values.res
-    output: $.values.res
+  aaa:
+    ddd: sss
+# modules:
+#   - name: d
+#     tasks:
+#     - print: $.values
+#     - sum:
+#         x: $.values.aa
+#         "y":  $.values.bb
+#       output: $.values.res
+#     output: $.values.res
 tasks:
-  - print: $.values.aa
-  - cron:
-      expr: '0 * * * * *'
-      tasks:
-      - print: aaaaa
-  - server:
-      port: 9898
-      routes:
-        - method: GET
-          path: "/a"
-          file: task.yaml
-          tasks:
-          - print: $$.ctx
-          - sum:
-              x: 1
-              "y": 1
-            output: $$.ctx.resp
-          - print: $$.ctx.resp
+  - print: $.values.aaa.ddd
+  # - cron:
+  #     expr: '0 * * * * *'
+  #     tasks:
+  #     - print: aaaaa
+  # - server:
+  #     port: 9898
+  #     routes:
+  #       - method: GET
+  #         path: "/a"
+  #         file: task.yaml
+  #         tasks:
+  #         - print: $$.ctx
+  #         - sum:
+  #             x: 1
+  #             "y": 1
+  #           output: $$.ctx.resp
+  #         - print: $$.ctx.resp
   # - d: 
   #     aa: 112.5
   #     bb: $.ctx.item
@@ -36,30 +38,30 @@ tasks:
   #   - 1
   #   - 2
   # - print: $.values
-  - tasks:
-    - sum:
-        x: 1
-        "y": 3
-      output: $.values.a
-      sync: c
-    - print: $.values.a
-    - print: out2:{{.values.a}}
-      await: ["c"]
-    async: a
-  - print: $.values.a
-  - print: $.values.a
-  - print: $.values.a
-    await: ["a"]
-  - print: $.values.a
-  - print: $.values.a
-  - js:
-      script: |
-        console.log(sys.args.a)
-        sys.output(sys.args.a+1)
-      args: 
-        a: $.values.a
-    output: $.values.b
-  - print: $.values
+  # - tasks:
+  #   - sum:
+  #       x: 1
+  #       "y": 3
+  #     output: $.values.a
+  #     sync: c
+  #   - print: $.values.a
+  #   - print: out2:{{.values.a}}
+  #     await: ["c"]
+  #   async: a
+  # - print: $.values.a
+  # - print: $.values.a
+  # - print: $.values.a
+  #   await: ["a"]
+  # - print: $.values.a
+  # - print: $.values.a
+  # - js:
+  #     script: |
+  #       console.log(sys.args.a)
+  #       sys.output(sys.args.a+1)
+  #     args: 
+  #       a: $.values.a
+  #   output: $.values.b
+  # - print: $.values
   # - id: "1"
   #   sum: 
   #     x: $.values.aa
