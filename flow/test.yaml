@@ -11,6 +11,10 @@ modules:
     output: $.values.res
 tasks:
   - print: $.values.aa
+  - cron:
+      expr: '0 * * * * *'
+      tasks:
+      - print: aaaaa
   - server:
       port: 9898
       routes:
