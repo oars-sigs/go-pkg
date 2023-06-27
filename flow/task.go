@@ -73,6 +73,7 @@ func (t Task) Action(conf *Config, await *gawait, vars *Gvars) (*customAction, e
 	t.MultiTasks(res)
 	t.Loop(res)
 	t.While(res)
+	t.DeferTask(res)
 	t.Single(res)
 	return res, nil
 }
@@ -202,6 +203,22 @@ func (t Task) Single(ctxAction *customAction) {
 	ctxAction.a = &customFuncAction{m, ctxAction.a.Params()}
 }
 
+func (t Task) DeferTask(ctxAction *customAction) {
+	if len(ctxAction.DeferTasks) == 0 {
+		return
+	}
+	m := func(conf *Config, params interface{}) (interface{}, error) {
+		playbook := NewPlaybook(ctxAction.DeferTasks, ctxAction.vars)
+		config := &Config{
+			Workdir: ctxAction.conf.Workdir,
+			Next:    playbook.Next,
+		}
+		err := playbook.Run(config)
+		return nil, err
+	}
+	ctxAction.a = &customFuncAction{m, nil}
+}
+
 type customAction struct {
 	a           Action
 	conf        *Config
@@ -217,6 +234,7 @@ type customAction struct {
 	Tasks       []Task      `yaml:"tasks"`
 	Switch      *Switch     `yaml:"switch"`
 	Output      string      `yaml:"output"`
+	DeferTasks  []Task      `yaml:"defer"`
 }
 
 type Switch struct {

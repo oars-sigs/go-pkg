@@ -13,6 +13,31 @@ values:
 #     output: $.values.res
 tasks:
   - print: $.values.aaa.ddd
+  - defer:
+    - print: defer aaaaa
+  - print: ddddd
+  - defer:
+    - print: defer ttttt
+  - tasks:
+    - print: sub1111
+    - defer:
+      - print: defer sub1111
+    - js:
+        script: |
+           sys.gdefer(function(){
+              console.log('defer subhhhhhhh')
+            })
+    - print: sub22222
+  - js:
+      script: |
+        sys.defer(function(){
+          console.log('defer ggggg')
+        })
+        sys.gdefer(function(){
+          console.log('defer hhhhhhh')
+        })
+        console.log('yyyyy')
+  - print: ccccc
   # - cron:
   #     expr: '0 * * * * *'
   #     tasks:

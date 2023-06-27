@@ -32,10 +32,18 @@ type JsAction struct {
 func (a *JsAction) Do(conf *Config, params interface{}) (interface{}, error) {
 	args := params.(JsAction)
 	jsvm := goja.New()
+	//fns :=make([]string,0)
 	var output interface{}
 	JSSet("sys", "args", args.Input)
 	JSSet("sys", "output", func(v any) {
 		output = v
+	})
+	var fns []func()
+	JSSet("sys", "defer", func(fn func()) {
+		fns = append(fns, fn)
+	})
+	JSSet("sys", "gdefer", func(fn func()) {
+		conf.PTasks = append(conf.PTasks, fn)
 	})
 	for k, v := range JsFunMap {
 		jsvm.Set(k, v)
@@ -48,6 +56,9 @@ func (a *JsAction) Do(conf *Config, params interface{}) (interface{}, error) {
 		args.Script = string(data)
 	}
 	_, err := jsvm.RunString(args.Script)
+	for i := len(fns); i > 0; i-- {
+		fns[i-1]()
+	}
 	if err != nil {
 		return nil, err
 	}

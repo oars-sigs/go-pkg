@@ -11,6 +11,7 @@ import (
 type Vars struct {
 	Values map[string]interface{}
 	Ctx    map[string]interface{}
+	Global map[string]interface{}
 }
 
 type Gvars struct {
@@ -47,6 +48,7 @@ func (p *Gvars) Vars() map[string]interface{} {
 	vars := p.data
 	res["values"] = mapcopy(vars.Values)
 	res["ctx"] = mapcopy(vars.Ctx)
+	res["global"] = vars.Global
 	return res
 }
 
@@ -63,6 +65,8 @@ func (p *Gvars) GetVar(s string) (interface{}, bool) {
 			p = mapcopy(vars.Values).(map[string]interface{})
 		case "ctx":
 			p = mapcopy(vars.Ctx).(map[string]interface{})
+		case "global":
+			p = vars.Global
 		default:
 			return nil, false
 		}
@@ -106,6 +110,8 @@ func (p *Gvars) SetVar(s string, value interface{}) {
 			p = vars.Values
 		case "ctx":
 			p = vars.Ctx
+		case "global":
+			p = vars.Global
 		default:
 			return
 		}

@@ -2,6 +2,7 @@ package flow
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 
 	"gopkg.in/yaml.v2"
@@ -38,12 +39,13 @@ func Run(path string) error {
 }
 
 type Playbook struct {
-	Tasks   []Task                 `yaml:"tasks"`
-	Values  map[string]interface{} `yaml:"values"`
-	Modules []Module               `yaml:"modules"`
-	gvars   *Gvars
-	index   int
-	await   *gawait
+	Tasks     []Task                 `yaml:"tasks"`
+	Values    map[string]interface{} `yaml:"values"`
+	Modules   []Module               `yaml:"modules"`
+	gvars     *Gvars
+	index     int
+	await     *gawait
+	deferTask []customAction
 }
 
 func NewPlaybook(tasks []Task, vars *Gvars) *Playbook {
@@ -64,11 +66,24 @@ func (p *Playbook) Run(conf *Config) error {
 		if err != nil {
 			return err
 		}
-		_, err = c.Do()
-		if err != nil {
-			return err
+		if len(c.DeferTasks) > 0 {
+			defer func() {
+				_, err = c.Do()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}()
+		} else {
+			_, err = c.Do()
+			if err != nil {
+				return err
+			}
 		}
+
 		p.index = p.index + 1
+	}
+	for i := len(conf.PTasks); i > 0; i-- {
+		conf.PTasks[i-1]()
 	}
 	return nil
 
