@@ -14,7 +14,7 @@ type SysResp struct {
 
 func (c *Client) Sys(param string) (map[string]interface{}, error) {
 	var res SysResp
-	err := req.ReqJSON(http.MethodGet, c.getUrl("/idaas-app/sys?param="+param), nil, &res, c.setAuthHeader(nil))
+	err := req.ReqJSON(http.MethodGet, c.getUrl("/idaas-app/sys?params="+param), nil, &res, c.setAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}
