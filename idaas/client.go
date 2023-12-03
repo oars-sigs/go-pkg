@@ -25,7 +25,7 @@ type Config struct {
 	AppSecret string
 }
 
-//Client filebase client
+// Client filebase client
 type Client struct {
 	cfg *Config
 }
@@ -117,7 +117,7 @@ func (c *Client) Users(userIds []string, useBindPool bool) ([]UserInfo, error) {
 }
 
 func (c *Client) SearchUsers(nickName, deptId, posId string, indistinct, getChildren, useBindPool bool) ([]UserInfo, error) {
-	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/users?nickName=%s&deptId=%s&posId=%s&indistinct=%v&getChildren=%v&useBindPool=%v",
+	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/users?nickName=%s&deptId=%s&posId=%s&indistinct=%v&getChildren=%v&useBindPool=%v&getDept=true",
 		nickName, deptId, posId, indistinct, getChildren, useBindPool))
 	var users UsersResp
 	err := req.ReqJSON("GET", urlstr, nil, &users, c.setAuthHeader(nil))
