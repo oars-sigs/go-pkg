@@ -3,13 +3,13 @@ package flow
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
 
-func Run(path string) error {
-	data, err := ioutil.ReadFile(path)
+func Run(path string, valuePath ...string) error {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -25,6 +25,20 @@ func Run(path string) error {
 	}
 	if p.Values == nil {
 		p.Values = make(map[string]interface{})
+	}
+	if len(valuePath) > 0 || valuePath[0] != "" {
+		data, err := os.ReadFile(valuePath[0])
+		if err != nil {
+			return err
+		}
+		var value map[string]interface{}
+		err = yaml.Unmarshal(data, &value)
+		if err != nil {
+			return err
+		}
+		for k, v := range value {
+			p.Values[k] = v
+		}
 	}
 	vars := &Vars{
 		Values: p.Values,
