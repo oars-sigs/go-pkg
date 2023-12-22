@@ -2,6 +2,15 @@ values:
   aa: 2
   aaa:
     ddd: sss
+  ss:
+    a:
+      aa:
+      - 1
+      - 2
+    b:
+      bb:
+      - 3
+      - 4
 # modules:
 #   - name: d
 #     tasks:
@@ -12,32 +21,45 @@ values:
 #       output: $.values.res
 #     output: $.values.res
 tasks:
-  - print: $.values.aaa.ddd
-  - defer:
-    - print: defer aaaaa
-  - print: ddddd
-  - defer:
-    - print: defer ttttt
+  # - print: $.ctx.itemKey
+  #   loop: $.values.ss
   - tasks:
-    - print: sub1111
-    - defer:
-      - print: defer sub1111
+    - print: $.ctx.itemKey
     - js:
-        script: |
-           sys.gdefer(function(){
-              console.log('defer subhhhhhhh')
-            })
-    - print: sub22222
-  - js:
-      script: |
-        sys.defer(function(){
-          console.log('defer ggggg')
-        })
-        sys.gdefer(function(){
-          console.log('defer hhhhhhh')
-        })
-        console.log('yyyyy')
-  - print: ccccc
+        script: sys.output('ssss')
+      output: $.ctx.a
+    - print: $.ctx.a
+    - tasks:
+      - print: $.ctx.item
+        loop: $.ctx.item
+      loop: $.ctx.item
+    loop: $.values.ss
+  # - print: $.values.aaa.ddd
+  # - defer:
+  #   - print: defer aaaaa
+  # - print: ddddd
+  # - defer:
+  #   - print: defer ttttt
+  # - tasks:
+  #   - print: sub1111
+  #   - defer:
+  #     - print: defer sub1111
+  #   - js:
+  #       script: |
+  #          sys.gdefer(function(){
+  #             console.log('defer subhhhhhhh')
+  #           })
+  #   - print: sub22222
+  # - js:
+  #     script: |
+  #       sys.defer(function(){
+  #         console.log('defer ggggg')
+  #       })
+  #       sys.gdefer(function(){
+  #         console.log('defer hhhhhhh')
+  #       })
+  #       console.log('yyyyy')
+  # - print: ccccc
   # - cron:
   #     expr: '0 * * * * *'
   #     tasks:

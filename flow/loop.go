@@ -1,6 +1,8 @@
 package flow
 
-import "reflect"
+import (
+	"reflect"
+)
 
 func Loop(loop interface{}, vars *Gvars) []LoopRes {
 	switch reflect.TypeOf(loop).Kind() {

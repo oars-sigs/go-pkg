@@ -1,7 +1,6 @@
 package flow
 
 import (
-	"encoding/json"
 	"strings"
 	"sync"
 
@@ -30,7 +29,9 @@ func (p *Gvars) SetCtx(ctx map[string]interface{}) *Gvars {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	for k, v := range p.data.Ctx {
-		ctx[k] = v
+		if _, ok := ctx[k]; !ok {
+			ctx[k] = v
+		}
 	}
 	return &Gvars{
 		data: &Vars{
@@ -144,16 +145,18 @@ func mapconv(s map[interface{}]interface{}) map[string]interface{} {
 }
 
 func mapcopy(v interface{}) interface{} {
-	d, _ := json.Marshal(dyno.ConvertMapI2MapS(v))
-	if _, ok := v.(map[interface{}]interface{}); ok {
-		var res map[string]interface{}
-		json.Unmarshal(d, &res)
-		return dyno.ConvertMapI2MapS(res)
-	}
-	if _, ok := v.(map[string]interface{}); ok {
-		var res map[string]interface{}
-		json.Unmarshal(d, &res)
-		return dyno.ConvertMapI2MapS(res)
-	}
-	return v
+	//d, _ := json.Marshal(dyno.ConvertMapI2MapS(v))
+	return dyno.ConvertMapI2MapS(v)
+	// if _, ok := v.(map[interface{}]interface{}); ok {
+	// 	var res map[string]interface{}
+	// 	json.Unmarshal(d, &res)
+	// 	return dyno.ConvertMapI2MapS(res)
+	// }
+	// if _, ok := v.(map[string]interface{}); ok {
+	// 	var res map[string]interface{}
+	// 	json.Unmarshal(d, &res)
+	// 	fmt.Println(res, dyno.ConvertMapI2MapS(v), "555555")
+	// 	return dyno.ConvertMapI2MapS(res)
+	// }
+	// return v
 }

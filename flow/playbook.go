@@ -26,7 +26,7 @@ func Run(path string, valuePath ...string) error {
 	if p.Values == nil {
 		p.Values = make(map[string]interface{})
 	}
-	if len(valuePath) > 0 || valuePath[0] != "" {
+	if len(valuePath) > 0 && valuePath[0] != "" {
 		data, err := os.ReadFile(valuePath[0])
 		if err != nil {
 			return err
