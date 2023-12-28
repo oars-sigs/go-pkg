@@ -23,6 +23,8 @@ type UserInfo struct {
 	AppID       string      `json:"appId"`
 	RealId      string      `json:"realId"`
 	Verified    bool        `json:"verified"`
+	SearchText  string      `json:"searchText"`
+	Type        string      `json:"type"`
 }
 
 type Department struct {
