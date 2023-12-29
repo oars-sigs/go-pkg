@@ -49,6 +49,7 @@ func Run(path string, valuePath ...string) error {
 		AddCustomActions(m.Name, &m)
 	}
 	AddCustomActions("print", new(PrintAction))
+	AddCustomActions("setface", new(SetfaceAction))
 	return p.Run(conf)
 }
 

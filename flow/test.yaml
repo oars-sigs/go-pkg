@@ -22,8 +22,12 @@ values:
 #       output: $.values.res
 #     output: $.values.res
 tasks:
-  - print: dd
-    when: values.aa == "ck"
+  - setface: $.values.aa
+    output: $.values.ddd
+    debug: true
+  - print: $.values.ddd
+  # - print: dd
+  #   when: values.aa == "ck"
   # - print: $.ctx.itemKey
   #   loop: $.values.ss
   # - tasks:

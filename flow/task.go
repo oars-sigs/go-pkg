@@ -2,6 +2,8 @@ package flow
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -235,6 +237,7 @@ type customAction struct {
 	Switch      *Switch     `yaml:"switch"`
 	Output      string      `yaml:"output"`
 	DeferTasks  []Task      `yaml:"defer"`
+	Debug       bool        `yaml:"debug"`
 }
 
 type Switch struct {
@@ -269,7 +272,14 @@ func (a *customAction) Do() (interface{}, error) {
 	if a.Sleep > 0 {
 		time.Sleep(time.Second * time.Duration(a.Sleep))
 	}
-
+	if a.Debug {
+		d, err := json.MarshalIndent(res, "", "\t")
+		if err == nil {
+			fmt.Println("debug:", string(d))
+		} else {
+			fmt.Println("debug:", res)
+		}
+	}
 	return res, err
 }
 
