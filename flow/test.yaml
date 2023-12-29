@@ -3,15 +3,15 @@ values:
   c: 1
   # aaa:
   #   ddd: sss
-  # ss:
-  #   a:
-  #     aa:
-  #     - 1
-  #     - 2
-  #   b:
-  #     bb:
-  #     - 3
-  #     - 4
+  ss:
+    a:
+      aa:
+      - 1
+      - 2
+    b:
+      bb:
+      - 3
+      - 4
 # modules:
 #   - name: d
 #     tasks:
@@ -22,25 +22,25 @@ values:
 #       output: $.values.res
 #     output: $.values.res
 tasks:
-  - setface: $.values.aa
-    output: $.values.ddd
-    debug: true
-  - print: $.values.ddd
+  # - setface: $.values.aa
+  #   output: $.values.ddd
+  #   debug: true
+  # - print: $.values.ddd
   # - print: dd
   #   when: values.aa == "ck"
   # - print: $.ctx.itemKey
   #   loop: $.values.ss
-  # - tasks:
-  #   - print: $.ctx.itemKey
-  #   - js:
-  #       script: sys.output('ssss')
-  #     output: $.ctx.a
-  #   - print: $.ctx.a
-  #   - tasks:
-  #     - print: $.ctx.item
-  #       loop: $.ctx.item
-  #     loop: $.ctx.item
-  #   loop: $.values.ss
+  - tasks:
+    - print: $.ctx.item
+    - setface: $.ctx.item
+      output: $.ctx.a
+      debug: true
+    - print: $.ctx.a
+    - tasks:
+      - print: $.ctx.item
+        loop: $.ctx.item
+      loop: $.ctx.item
+    loop: $.values.ss
   # - print: $.values.aaa.ddd
   # - defer:
   #   - print: defer aaaaa

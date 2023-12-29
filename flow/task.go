@@ -2,7 +2,6 @@ package flow
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -273,12 +272,7 @@ func (a *customAction) Do() (interface{}, error) {
 		time.Sleep(time.Second * time.Duration(a.Sleep))
 	}
 	if a.Debug {
-		d, err := json.MarshalIndent(res, "", "\t")
-		if err == nil {
-			fmt.Println("debug:", string(d))
-		} else {
-			fmt.Println("debug:", res)
-		}
+		fmt.Printf("debug: %v\n", res)
 	}
 	return res, err
 }
