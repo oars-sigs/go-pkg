@@ -66,6 +66,13 @@ func (t Task) Action(conf *Config, await *gawait, vars *Gvars) (*customAction, e
 				res.params = v
 			}
 		}
+		if k == "when" {
+			if !when(v.(string), vars) {
+				res.a = &whenAction{}
+				res.params = v
+				return res, nil
+			}
+		}
 		if k == "tasks" {
 			res.params = getLoopMap(LoopRes{Item: "$.ctx.item", ItemKey: "$.ctx.itemKey"})
 		}

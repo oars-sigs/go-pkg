@@ -13,3 +13,17 @@ func when(s string, vars *Gvars) bool {
 	}
 	return false
 }
+
+type whenAction struct{}
+
+func (a *whenAction) Do(conf *Config, params interface{}) (interface{}, error) {
+	return "slip", nil
+}
+
+func (a *whenAction) Params() interface{} {
+	return nil
+}
+
+func (a *whenAction) Scheme() string {
+	return ""
+}
