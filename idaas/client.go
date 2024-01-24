@@ -116,9 +116,9 @@ func (c *Client) Users(userIds []string, useBindPool bool) ([]UserInfo, error) {
 	return users.Data, err
 }
 
-func (c *Client) SearchUsers(nickName, deptId, posId string, indistinct, getChildren, useBindPool bool) ([]UserInfo, error) {
-	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/users?nickName=%s&deptId=%s&posId=%s&indistinct=%v&getChildren=%v&useBindPool=%v&getDept=true",
-		nickName, deptId, posId, indistinct, getChildren, useBindPool))
+func (c *Client) SearchUsers(nickName, deptId, posId string, indistinct, getChildren, useBindPool bool, searchText string) ([]UserInfo, error) {
+	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/users?nickName=%s&deptId=%s&posId=%s&indistinct=%v&getChildren=%v&useBindPool=%v&getDept=true&searchText=%s",
+		nickName, deptId, posId, indistinct, getChildren, useBindPool, searchText))
 	var users UsersResp
 	err := req.ReqJSON("GET", urlstr, nil, &users, c.setAuthHeader(nil))
 	if err != nil {

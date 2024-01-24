@@ -37,6 +37,7 @@ type Department struct {
 	Updated  int64         `json:"updated"`
 	Children []*Department `json:"children"`
 	Path     string        `json:"path"`
+	NamePath string        `json:"namePath"`
 }
 
 type ThirdUser struct {
