@@ -12,13 +12,13 @@ type SysResp struct {
 	Data map[string]interface{} `json:"data"`
 }
 
-func (c *Client) Sys(param string) (map[string]interface{}, error) {
+func (c *Client) Sys(param, client string) (map[string]interface{}, error) {
 	var res SysResp
-	uri := "/idaas-app/sys"
+	uri := "/idaas-app/sys?client=" + client
 	if param != "" {
-		uri += "?params=" + param
+		uri += "&params=" + param
 	}
-	err := req.ReqJSON(http.MethodGet, c.getUrl(uri), nil, &res, c.setAuthHeader(nil))
+	err := req.ReqJSON(http.MethodGet, c.GetUrl(uri), nil, &res, c.SetAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}

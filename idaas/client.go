@@ -34,7 +34,7 @@ func New(cfg *Config) *Client {
 	return &Client{cfg}
 }
 
-func (c *Client) setAuthHeader(headers map[string]string) map[string]string {
+func (c *Client) SetAuthHeader(headers map[string]string) map[string]string {
 	if headers == nil {
 		headers = make(map[string]string)
 	}
@@ -43,7 +43,7 @@ func (c *Client) setAuthHeader(headers map[string]string) map[string]string {
 	return headers
 }
 
-func (c *Client) getUrl(uri string) string {
+func (c *Client) GetUrl(uri string) string {
 	return c.cfg.Address + uri
 }
 
@@ -54,9 +54,9 @@ type DeptsResp struct {
 
 func (c *Client) Depts(depts interface{}, tree, useBindPool bool) ([]Department, error) {
 	if deptId, ok := depts.(string); ok {
-		urlstr := c.getUrl(fmt.Sprintf("/idaas/api/departments?deptId=%s&tree=%v&useBindPool=%v", deptId, tree, useBindPool))
+		urlstr := c.GetUrl(fmt.Sprintf("/idaas/api/departments?deptId=%s&tree=%v&useBindPool=%v", deptId, tree, useBindPool))
 		var depts DeptsResp
-		err := req.ReqJSON("GET", urlstr, nil, &depts, c.setAuthHeader(nil))
+		err := req.ReqJSON("GET", urlstr, nil, &depts, c.SetAuthHeader(nil))
 		if err != nil {
 			return nil, err
 		}
@@ -66,9 +66,9 @@ func (c *Client) Depts(depts interface{}, tree, useBindPool bool) ([]Department,
 		return depts.Data, err
 	}
 	if deptIds, ok := depts.([]string); ok {
-		urlstr := c.getUrl(fmt.Sprintf("/idaas/api/departmentslist?useBindPool=%v", useBindPool))
+		urlstr := c.GetUrl(fmt.Sprintf("/idaas/api/departmentslist?useBindPool=%v", useBindPool))
 		var depts DeptsResp
-		err := req.ReqJSON("POST", urlstr, deptIds, &depts, c.setAuthHeader(nil))
+		err := req.ReqJSON("POST", urlstr, deptIds, &depts, c.SetAuthHeader(nil))
 		if err != nil {
 			return nil, err
 		}
@@ -86,9 +86,9 @@ type DeptResp struct {
 }
 
 func (c *Client) Dept(deptId string, useBindPool bool) (*Department, error) {
-	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/departments/%s?useBindPool=%v", deptId, useBindPool))
+	urlstr := c.GetUrl(fmt.Sprintf("/idaas/api/departments/%s?useBindPool=%v", deptId, useBindPool))
 	var dept DeptResp
-	err := req.ReqJSON("GET", urlstr, nil, &dept, c.setAuthHeader(nil))
+	err := req.ReqJSON("GET", urlstr, nil, &dept, c.SetAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}
@@ -104,9 +104,9 @@ type UsersResp struct {
 }
 
 func (c *Client) Users(userIds []string, useBindPool bool) ([]UserInfo, error) {
-	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/userslist?useBindPool=%v", useBindPool))
+	urlstr := c.GetUrl(fmt.Sprintf("/idaas/api/userslist?useBindPool=%v", useBindPool))
 	var users UsersResp
-	err := req.ReqJSON("POST", urlstr, userIds, &users, c.setAuthHeader(nil))
+	err := req.ReqJSON("POST", urlstr, userIds, &users, c.SetAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}
@@ -117,10 +117,10 @@ func (c *Client) Users(userIds []string, useBindPool bool) ([]UserInfo, error) {
 }
 
 func (c *Client) SearchUsers(nickName, deptId, posId string, indistinct, getChildren, useBindPool bool, searchText string) ([]UserInfo, error) {
-	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/users?nickName=%s&deptId=%s&posId=%s&indistinct=%v&getChildren=%v&useBindPool=%v&getDept=true&searchText=%s",
+	urlstr := c.GetUrl(fmt.Sprintf("/idaas/api/users?nickName=%s&deptId=%s&posId=%s&indistinct=%v&getChildren=%v&useBindPool=%v&getDept=true&searchText=%s",
 		nickName, deptId, posId, indistinct, getChildren, useBindPool, searchText))
 	var users UsersResp
-	err := req.ReqJSON("GET", urlstr, nil, &users, c.setAuthHeader(nil))
+	err := req.ReqJSON("GET", urlstr, nil, &users, c.SetAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}
@@ -136,9 +136,9 @@ type UserResp struct {
 }
 
 func (c *Client) User(userId string, useBindPool bool) (*UserInfo, error) {
-	urlstr := c.getUrl(fmt.Sprintf("/idaas/api/users/%s?useBindPool=%v", userId, useBindPool))
+	urlstr := c.GetUrl(fmt.Sprintf("/idaas/api/users/%s?useBindPool=%v", userId, useBindPool))
 	var user UserResp
-	err := req.ReqJSON("GET", urlstr, nil, &user, c.setAuthHeader(nil))
+	err := req.ReqJSON("GET", urlstr, nil, &user, c.SetAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}
