@@ -1,30 +1,123 @@
 package idaas
 
+import (
+	"database/sql/driver"
+	"fmt"
+	"strings"
+	"time"
+
+	"gorm.io/datatypes"
+)
+
 type UserInfo struct {
-	UserId      string      `json:"userId"`
-	PoolId      string      `json:"poolId"`
-	Username    string      `json:"username"`
-	NewPassword string      `json:"newPassword"`
-	NickName    string      `json:"nickName"`
-	Gender      string      `json:"gender"`
-	DeptId      string      `json:"deptId"`
-	PostId      string      `json:"postId"`
-	RoleId      string      `json:"roleId"`
-	Mobile      string      `json:"mobile"`
-	Telephone   string      `json:"telephone"`
-	Email       string      `json:"email"`
-	Avatar      string      `json:"avatar"`
-	State       int         `json:"state"`
-	OrderNum    int         `json:"orderNum"`
-	Created     int64       `json:"created"`
-	Updated     int64       `json:"updated"`
-	Kind        int         `json:"kind"`
-	Dept        *Department `json:"dept"`
-	AppID       string      `json:"appId"`
-	RealId      string      `json:"realId"`
-	Verified    bool        `json:"verified"`
-	SearchText  string      `json:"searchText"`
-	Type        string      `json:"type"`
+	//用户ID
+	UserId string `json:"userId" gorm:"column:user_id"`
+	//用户池ID
+	PoolId string `json:"poolId" gorm:"column:user_pool_id"`
+	//用户名
+	Username string `json:"username" gorm:"column:user_username"`
+	//用户密码
+	NewPassword string `json:"newPassword" gorm:"-"`
+	//swagger:ignore
+	Password string `json:"-" gorm:"column:user_password"`
+	//用户别名
+	NickName string `json:"nickName" gorm:"column:user_nick_name"`
+	//性别
+	Gender string `json:"gender" gorm:"column:user_gender"`
+	//部门ID
+	DeptId string `json:"deptId" gorm:"column:user_dept_id"`
+	//部门IDS
+	DeptIds []string `json:"deptIds" gorm:"-"`
+	//岗位ID
+	PostId string `json:"postId" gorm:"column:user_post_id"`
+	//岗位名称
+	PostName string `json:"postName" gorm:"column:user_post_name"`
+	//角色ID、岗位类型
+	RoleId string `json:"roleId" gorm:"column:user_role_id"`
+	//用户组ID
+	GroupId string `json:"groupId" gorm:"column:user_group_id"`
+	//手机号
+	Mobile string `json:"mobile" gorm:"column:user_mobile"`
+	//电话
+	Telephone string `json:"telephone" gorm:"column:user_telephone"`
+	//邮箱
+	Email string `json:"email" gorm:"column:user_email"`
+	//头像
+	Avatar string `json:"avatar" gorm:"column:user_avatar"`
+	//状态
+	State int `json:"state" gorm:"column:user_state"`
+	//状态值
+	Status string `json:"status" gorm:"column:user_status"`
+	//调动
+	Transfer string `json:"transfer" gorm:"column:user_transfer"`
+	//细化状态
+	DetailStatus string `json:"detailStatus" gorm:"column:user_detail_status"`
+	//排序
+	OrderNum int `json:"orderNum" gorm:"column:user_order_num"`
+	//创建时间
+	Created int64 `json:"created" gorm:"column:user_created"`
+	//更新时间
+	Updated int64 `json:"updated" gorm:"column:user_updated"`
+	//源用户ID
+	SrcId string `json:"srcId" gorm:"column:user_src_id"`
+	//extend
+	Extend datatypes.JSONMap `json:"extend" gorm:"column:user_extend" swaggertype:"object"`
+	//入职时间
+	Hiredate JSONTime `json:"hiredate" gorm:"column:user_hiredate" swaggertype:"string"`
+	//生日
+	Birthday JSONTime `json:"birthday" gorm:"column:user_birthday" swaggertype:"string"`
+	//卡号1
+	CardNum1 string `json:"cardNum1" gorm:"column:user_cardnum1" swaggertype:"string"`
+	//卡号2
+	CardNum2 string `json:"cardNum2" gorm:"column:user_cardnum2" swaggertype:"string"`
+	//卡号3
+	CardNum3 string `json:"cardNum3" gorm:"column:user_cardnum3" swaggertype:"string"`
+	//独生子女
+	OnlyChild *int `json:"onlyChild" gorm:"column:user_only_child"`
+	//已婚
+	Married *int `json:"married" gorm:"column:user_married"`
+	//类型
+	Kind int `json:"kind" gorm:"-"`
+	//部门
+	Dept *Department `json:"dept" gorm:"-"`
+	//用户组
+	Group *Group `json:"group" gorm:"-"`
+	//用户组数组
+	Groups []Group `json:"groups" gorm:"-"`
+	//应用ID
+	AppID string `json:"appId" gorm:"-"`
+	//真实用户ID
+	RealId string `json:"realId" gorm:"-"`
+	//是否实名
+	Verified bool `json:"verified" gorm:"-"`
+	//搜索字符
+	SearchText string `json:"searchText" gorm:"column:user_search_text"`
+	Type       string `json:"type" gorm:"-"`
+}
+
+type Group struct {
+	ID          string      `json:"id" gorm:"column:group_id"`
+	PoolId      string      `json:"poolId" gorm:"column:group_pool_id"`
+	DeptId      string      `json:"deptId" gorm:"column:group_dept_id"`
+	ParentId    string      `json:"parentId" gorm:"column:group_parent_id"`
+	Name        string      `json:"name" gorm:"column:group_name"`
+	Desc        string      `json:"desc" gorm:"column:group_desc"`
+	Created     int64       `json:"created" gorm:"column:group_created;autoCreateTime:milli"`
+	Updated     int64       `json:"updated" gorm:"column:group_updated;autoUpdateTime:milli"`
+	OrderNum    int         `json:"orderNum" gorm:"column:group_order_num"`
+	SrcId       string      `json:"srcId" gorm:"column:group_src_id"`
+	Path        string      `json:"path" gorm:"-"`
+	Paths       []string    `json:"paths"  gorm:"-"`
+	NamePath    string      `json:"namePath"  gorm:"-"`
+	Children    []*Group    `json:"children"  gorm:"-"`
+	Dept        *Department `json:"dept"  gorm:"-"`
+	HasChildren bool        `json:"hasChildren" gorm:"-"`
+	//前端界面使用
+	IsAfter    bool        `json:"isAfter" gorm:"-"`
+	UserCount  int         `json:"userCount" gorm:"-"`
+	Users      []*UserInfo `json:"users"  gorm:"-"`
+	CacheUsers []*UserInfo `json:"-"  gorm:"-"`
+	Type       string      `json:"type"  gorm:"-"`
 }
 
 type Department struct {
@@ -171,4 +264,41 @@ type EnforceParam struct {
 	Token        string `json:"token"`        //用户token, 和（userId、deptPath）取一个
 	UserId       string `json:"userId"`       //用户id
 	DeptPath     string `json:"deptPath"`     //部门path
+}
+
+// JSONTime format json time field by myself
+type JSONTime struct {
+	time.Time
+}
+
+// MarshalJSON on JSONTime format Time field with %Y-%m-%d %H:%M:%S
+func (t JSONTime) MarshalJSON() ([]byte, error) {
+	formatted := fmt.Sprintf("\"%s\"", t.Format("2006-01-02 15:04:05"))
+	return []byte(formatted), nil
+}
+
+// MarshalJSON on JSONTime format Time field with %Y-%m-%d %H:%M:%S
+func (t *JSONTime) UnmarshalJSON(d []byte) error {
+	tb, _ := time.ParseInLocation("2006-01-02 15:04:05", strings.Trim(string(d), "\""), time.Local)
+	(*t).Time = tb
+	return nil
+}
+
+// Value insert timestamp into mysql need this function.
+func (t JSONTime) Value() (driver.Value, error) {
+	var zeroTime time.Time
+	if t.Time.UnixNano() == zeroTime.UnixNano() {
+		return nil, nil
+	}
+	return t.Time, nil
+}
+
+// Scan valueof time.Time
+func (t *JSONTime) Scan(v interface{}) error {
+	value, ok := v.(time.Time)
+	if ok {
+		*t = JSONTime{Time: value}
+		return nil
+	}
+	return fmt.Errorf("can not convert %v to timestamp", v)
 }
