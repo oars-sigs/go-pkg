@@ -8,12 +8,23 @@ func Loop(loop interface{}, vars *Gvars) []LoopRes {
 	switch reflect.TypeOf(loop).Kind() {
 	case reflect.Slice:
 		res := make([]LoopRes, 0)
-		for i, item := range loop.([]interface{}) {
-			res = append(res, LoopRes{
-				Item:    item,
-				ItemKey: i,
-			})
+		if v, ok := (loop.([]interface{})); ok {
+			for i, item := range v {
+				res = append(res, LoopRes{
+					Item:    item,
+					ItemKey: i,
+				})
+			}
 		}
+		if v, ok := (loop.([]string)); ok {
+			for i, item := range v {
+				res = append(res, LoopRes{
+					Item:    item,
+					ItemKey: i,
+				})
+			}
+		}
+
 		return res
 	case reflect.Map:
 		res := make([]LoopRes, 0)
