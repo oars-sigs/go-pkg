@@ -27,3 +27,16 @@ func (c *Client) Sys(param, client string) (map[string]interface{}, error) {
 	}
 	return res.Data, err
 }
+
+func (c *Client) CleanPoolCache() error {
+	var res base.DataResponse
+	uri := "/idaas-app/poolcache"
+	err := req.ReqJSON(http.MethodDelete, c.GetUrl(uri), nil, &res, c.SetAuthHeader(nil))
+	if err != nil {
+		return err
+	}
+	if res.Error.Error() != nil {
+		return err
+	}
+	return err
+}
