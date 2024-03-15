@@ -131,6 +131,7 @@ type Department struct {
 	Children []*Department `json:"children"`
 	Path     string        `json:"path"`
 	NamePath string        `json:"namePath"`
+	Kind     string        `json:"kind"`
 }
 
 type ThirdUser struct {
