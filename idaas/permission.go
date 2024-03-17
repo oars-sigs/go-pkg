@@ -117,3 +117,22 @@ func (c *Client) PermissionResources(data EnforceParam) (*ResourceNames, error) 
 	}
 	return resp.Data, nil
 }
+
+type PermissionRolesResp struct {
+	*base.DataResponse
+	Data []PermissionRoles `json:"data"`
+}
+
+// PermissionResources 权限资源
+func (c *Client) PermissionRoles(data PermissionRoles) ([]PermissionRoles, error) {
+	urlstr := c.GetUrl("/idaas-app/permissions/roleslist ")
+	var resp PermissionRolesResp
+	err := req.ReqJSON("POST", urlstr, data, &resp, c.SetAuthHeader(nil))
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error.Error() != nil {
+		return nil, err
+	}
+	return resp.Data, nil
+}
