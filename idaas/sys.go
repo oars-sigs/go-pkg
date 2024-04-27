@@ -40,3 +40,52 @@ func (c *Client) CleanPoolCache() error {
 	}
 	return err
 }
+
+func (c *Client) BindThirdUser(tuser *ThirdUser) error {
+	var res base.DataResponse
+	uri := "/idaas-app/userbind"
+	err := req.ReqJSON(http.MethodPost, c.GetUrl(uri), tuser, &res, c.SetAuthHeader(nil))
+	if err != nil {
+		return err
+	}
+	if res.Error.Error() != nil {
+		return err
+	}
+	return err
+}
+
+type ListThirdUsersResp struct {
+	*base.DataResponse
+	Data []ThirdUser `json:"data"`
+}
+
+func (c *Client) ListThirdUsers(tuser *ThirdUser) ([]ThirdUser, error) {
+	var res ListThirdUsersResp
+	uri := "/idaas-app/thirdusers"
+	err := req.ReqJSON(http.MethodPost, c.GetUrl(uri), tuser, &res, c.SetAuthHeader(nil))
+	if err != nil {
+		return nil, err
+	}
+	if res.Error.Error() != nil {
+		return nil, err
+	}
+	return res.Data, err
+}
+
+type VerifyCaptchasResp struct {
+	*base.DataResponse
+	Data bool `json:"data"`
+}
+
+func (c *Client) VerifyCaptchas(b *VerifyCaptcha) (bool, error) {
+	var res VerifyCaptchasResp
+	uri := "/idaas-app/captchas"
+	err := req.ReqJSON(http.MethodPost, c.GetUrl(uri), b, &res, c.SetAuthHeader(nil))
+	if err != nil {
+		return false, err
+	}
+	if res.Error.Error() != nil {
+		return false, err
+	}
+	return res.Data, err
+}

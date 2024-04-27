@@ -303,3 +303,9 @@ func (t *JSONTime) Scan(v interface{}) error {
 	}
 	return fmt.Errorf("can not convert %v to timestamp", v)
 }
+
+type VerifyCaptcha struct {
+	ID     string `json:"id"`     //验证码ID
+	Answer string `json:"answer"` //用户填写验证码
+	Clear  bool   `json:"clear"`  //是否清除缓存
+}
