@@ -134,16 +134,22 @@ type Department struct {
 	Kind     string        `json:"kind"`
 }
 
+// ThirdUser 第三方用户
 type ThirdUser struct {
-	TUserId    string `json:"tuser_id" gorm:"column:tuser_id"`
-	PoolId     string `json:"poolId" gorm:"column:pool_id"`
-	UserId     string `json:"userId" gorm:"column:user_id"`
-	OpenId     string `json:"openid" gorm:"column:openid"`
-	LoginType  int    `json:"login_type" gorm:"column:login_type"`
-	SessionKey string `json:"sessionKey" gorm:"-"`
-	Username   string `json:"username" gorm:"-"`
-	Mobile     string `json:"mobile" gorm:"-"`
-	Email      string `json:"email" gorm:"-"`
+	TUserId     string `json:"tuser_id" gorm:"column:tuser_id"`
+	PoolId      string `json:"poolId" gorm:"column:pool_id"`
+	UserId      string `json:"userId" gorm:"column:user_id"`
+	OpenId      string `json:"openid" gorm:"column:openid"`
+	LoginType   int    `json:"login_type" gorm:"column:login_type"`
+	Visitor     int    `json:"visitor" gorm:"column:visitor"`
+	UnionId     string `json:"unionid" gorm:"column:unionid"`
+	SessionKey  string `json:"sessionKey" gorm:"-"`
+	AccessToken string `json:"accessToken" gorm:"-"`
+	Username    string `json:"username" gorm:"-"`
+	Mobile      string `json:"mobile" gorm:"-"`
+	Email       string `json:"email" gorm:"-"`
+	AutoReg     bool   `json:"autoReg" gorm:"-"`
+	LoginState  int    `json:"login_state" gorm:"-"`
 }
 
 type TokenInfo struct {
@@ -309,3 +315,25 @@ type VerifyCaptcha struct {
 	Answer string `json:"answer"` //用户填写验证码
 	Clear  bool   `json:"clear"`  //是否清除缓存
 }
+
+const (
+	LoginTypeWxApplet = 1
+	LoginTypePhone    = 2
+	LoginTypeWxWeb    = 3
+)
+
+const (
+	LoginStateWait   = 1
+	LoginStateScan   = 2
+	LoginStateFinish = 3
+)
+
+const (
+	VisitorUserType    = 1
+	NotVisitorUserType = 2
+)
+
+const (
+	UserNormalState = 1
+	UserDelState    = 2
+)
