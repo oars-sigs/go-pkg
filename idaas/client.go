@@ -135,6 +135,19 @@ type UserResp struct {
 	Data *UserInfo `json:"data"`
 }
 
+func (c *Client) UserByUsername(username string, useBindPool bool) (*UserInfo, error) {
+	urlstr := c.GetUrl(fmt.Sprintf("/idaas/api/users/usernames/%s?useBindPool=%v", username, useBindPool))
+	var user UserResp
+	err := req.ReqJSON("GET", urlstr, nil, &user, c.SetAuthHeader(nil))
+	if err != nil {
+		return nil, err
+	}
+	if user.Error.Error() != nil {
+		return nil, err
+	}
+	return user.Data, err
+}
+
 func (c *Client) User(userId string, useBindPool bool) (*UserInfo, error) {
 	urlstr := c.GetUrl(fmt.Sprintf("/idaas/api/users/%s?useBindPool=%v", userId, useBindPool))
 	var user UserResp
