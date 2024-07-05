@@ -185,10 +185,10 @@ func (c *Client) DeleteRole(data *PermissionRoles) error {
 
 type MenuResourcesResp struct {
 	*base.DataResponse
-	Data []MenuResource `json:"data"`
+	Data []*MenuResource `json:"data"`
 }
 
-func (c *Client) MenuResources() ([]MenuResource, error) {
+func (c *Client) MenuResources() ([]*MenuResource, error) {
 	urlstr := c.GetUrl("/idaas/api/resources")
 	var resp MenuResourcesResp
 	err := req.ReqJSON(http.MethodDelete, urlstr, nil, &resp, c.SetAuthHeader(nil))
