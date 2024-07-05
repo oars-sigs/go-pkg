@@ -191,7 +191,7 @@ type MenuResourcesResp struct {
 func (c *Client) MenuResources() ([]*MenuResource, error) {
 	urlstr := c.GetUrl("/idaas/api/resources")
 	var resp MenuResourcesResp
-	err := req.ReqJSON(http.MethodDelete, urlstr, nil, &resp, c.SetAuthHeader(nil))
+	err := req.ReqJSON(http.MethodGet, urlstr, nil, &resp, c.SetAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}
