@@ -201,6 +201,7 @@ type PermissionActions struct {
 	Creator      string `json:"creator" gorm:"column:creator"`
 	Created      int64  `json:"created" gorm:"column:created;autoUpdateTime:milli"`
 	Updated      int64  `json:"updated" gorm:"column:updated;autoUpdateTime:milli"`
+	IsChoose     bool   `json:"ischoose"`
 }
 
 type PermissionRoles struct {
