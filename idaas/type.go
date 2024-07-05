@@ -211,6 +211,8 @@ type PermissionRoles struct {
 	Role         string `json:"role" gorm:"column:role"`                  //角色，如admin
 	Resource     string `json:"resource" gorm:"column:resource"`          //关联资源，*代表所有
 	ResourceName string `json:"resourceName" gorm:"column:resource_name"` //关联资源名，*代表所有
+	ParentRole   string `json:"parentRole" gorm:"column:parent_role"`     //父角色
+	Level        int    `json:"level" gorm:"column:level"`                //层次
 	Creator      string `json:"creator" gorm:"column:creator"`
 	Created      int64  `json:"created" gorm:"column:created;autoUpdateTime:milli"`
 	Updated      int64  `json:"updated" gorm:"column:updated;autoUpdateTime:milli"`
@@ -337,3 +339,15 @@ const (
 	UserNormalState = 1
 	UserDelState    = 2
 )
+
+type MenuResource struct {
+	ID           int                 `json:"id"`
+	Name         string              `json:"name"`
+	Resource     string              `json:"resource"`
+	ResourceName string              `json:"resourceName"`
+	Path         string              `json:"path"`
+	Type         string              `json:"type"`
+	Actions      []PermissionActions `json:"actions"`
+	Children     []*MenuResource     `json:"children"`
+	Permissions  *ResourceNames      `json:"permissions"`
+}

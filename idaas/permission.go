@@ -1,6 +1,8 @@
 package idaas
 
 import (
+	"net/http"
+
 	"pkg.oars.vip/go-pkg/req"
 	"pkg.oars.vip/go-pkg/server/base"
 )
@@ -128,6 +130,68 @@ func (c *Client) PermissionRoles(data PermissionRoles) ([]PermissionRoles, error
 	urlstr := c.GetUrl("/idaas-app/permissions/roleslist")
 	var resp PermissionRolesResp
 	err := req.ReqJSON("POST", urlstr, data, &resp, c.SetAuthHeader(nil))
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error.Error() != nil {
+		return nil, err
+	}
+	return resp.Data, nil
+}
+
+type CreateRoleResp struct {
+	*base.DataResponse
+	Data PermissionRoles `json:"data"`
+}
+
+func (c *Client) CreateRole(data *PermissionRoles) error {
+	urlstr := c.GetUrl("/idaas-app/permissions/roles")
+	var resp CreateRoleResp
+	err := req.ReqJSON(http.MethodPost, urlstr, data, &resp, c.SetAuthHeader(nil))
+	if err != nil {
+		return err
+	}
+	if resp.Error.Error() != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) UpdateRole(data *PermissionRoles) error {
+	urlstr := c.GetUrl("/idaas-app/permissions/roles")
+	var resp base.DataResponse
+	err := req.ReqJSON(http.MethodPut, urlstr, data, &resp, c.SetAuthHeader(nil))
+	if err != nil {
+		return err
+	}
+	if resp.Error.Error() != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) DeleteRole(data *PermissionRoles) error {
+	urlstr := c.GetUrl("/idaas-app/permissions/roles")
+	var resp base.DataResponse
+	err := req.ReqJSON(http.MethodDelete, urlstr, data, &resp, c.SetAuthHeader(nil))
+	if err != nil {
+		return err
+	}
+	if resp.Error.Error() != nil {
+		return err
+	}
+	return nil
+}
+
+type MenuResourcesResp struct {
+	*base.DataResponse
+	Data []MenuResource `json:"data"`
+}
+
+func (c *Client) MenuResources() ([]MenuResource, error) {
+	urlstr := c.GetUrl("/idaas/api/resources")
+	var resp MenuResourcesResp
+	err := req.ReqJSON(http.MethodDelete, urlstr, nil, &resp, c.SetAuthHeader(nil))
 	if err != nil {
 		return nil, err
 	}
