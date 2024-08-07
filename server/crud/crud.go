@@ -366,7 +366,11 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		db = db.Model(resType)
 		if !resources.All {
 			if len(resources.ResourceNames) == 0 {
-				c.PageOK(g, res, 0, page.PageNum, page.PageSize)
+				if pageNum != "" {
+					c.PageOK(g, res, 0, page.PageNum, page.PageSize)
+					return
+				}
+				c.OK(g, res)
 				return
 			}
 			db = db.Where("id in (?)", resources.ResourceNames)
