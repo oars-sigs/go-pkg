@@ -132,6 +132,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 	}
 	m.(CommonModelInf).GenID()
 	m.(CommonModelInf).GenCreate(c.Mgr, g)
+	m.(CommonModelInf).SetCreatedBy(c.GetUid(g))
 	if l, ok := m.(CommonModelCreate); ok {
 		err = l.CreateORM(c.Tx.GetDB(), c.Mgr, g)
 	} else {

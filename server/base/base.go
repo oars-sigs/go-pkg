@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
+	"pkg.oars.vip/go-pkg/constant"
 	"pkg.oars.vip/go-pkg/perr"
 )
 
@@ -13,11 +14,11 @@ var (
 	SuccessCode = 10000
 )
 
-//BaseController Controller
+// BaseController Controller
 type BaseController struct {
 }
 
-//Health
+// Health
 func (c *BaseController) Health(g *gin.Context) {
 	c.OK(g, "success")
 
@@ -81,4 +82,9 @@ func (c *BaseController) PageQuery(g *gin.Context) (*Page, error) {
 		}
 	}
 	return &res, err
+}
+
+func (c *BaseController) GetUid(g *gin.Context) string {
+	s, _ := g.Get(constant.CtxKeyUserId)
+	return s.(string)
 }

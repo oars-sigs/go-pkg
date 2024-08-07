@@ -24,6 +24,8 @@ const (
 
 	VisitorUidPrefix = "oars-visitor-"
 	VisitorGroup     = "oars_sys_visitor"
+
+	CtxKeyUserId = "userId"
 )
 
 const (
