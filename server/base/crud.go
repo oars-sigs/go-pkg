@@ -23,19 +23,22 @@ type ResourceModel interface {
 }
 
 type CommonModelList interface {
-	ListORM(db *gorm.DB, c any, g *gin.Context) (*gorm.DB, interface{}, error)
+	ListORM(db *gorm.DB, g *gin.Context) (*gorm.DB, interface{}, error)
 }
 type CommonModelGet interface {
-	GetORM(db *gorm.DB, id string, c any, g *gin.Context) (*gorm.DB, interface{}, error)
+	GetORM(db *gorm.DB, id string, g *gin.Context) (*gorm.DB, interface{}, error)
 }
 type CommonModelCreate interface {
-	CreateORM(db *gorm.DB, c any, g *gin.Context) error
+	CreateORM(data any, db *gorm.DB, g *gin.Context) error
 }
 type CommonModelUpdate interface {
-	UpdateORM(db *gorm.DB, id string, c any, g *gin.Context) error
+	UpdateORM(data any, db *gorm.DB, id string, g *gin.Context) error
 }
 type CommonModelDelete interface {
-	DeleteORM(db *gorm.DB, id string, c any, g *gin.Context) error
+	DeleteORM(db *gorm.DB, id string, g *gin.Context) error
+}
+type CommonModelChangeCallback interface {
+	ChangeCallback(data any)
 }
 
 type CommonModel struct {
@@ -73,10 +76,6 @@ type CommonModelInf interface {
 	GetId() string
 	Bus() string
 	SetCreatedBy(uid string)
-}
-
-type CallbackFn interface {
-	Cb(mgr any)
 }
 
 type StoreTransaction interface {
@@ -144,7 +143,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 	m.(CommonModelInf).GenID()
 	m.(CommonModelInf).SetCreatedBy(c.GetUid(g))
 	if l, ok := c.GetService(resource).(CommonModelCreate); ok {
-		err = l.CreateORM(c.Tx.GetDB(), c.Mgr, g)
+		err = l.CreateORM(m, c.Tx.GetDB(), g)
 	} else {
 		err = c.Tx.GetDB().Create(m).Error
 	}
@@ -153,8 +152,8 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if l, ok := c.GetService(resource).(CallbackFn); ok {
-		l.Cb(c.Mgr)
+	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
+		l.ChangeCallback(m)
 	}
 	c.OK(g, m)
 }
@@ -169,7 +168,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		return
 	}
 	if l, ok := c.GetService(resource).(CommonModelUpdate); ok {
-		err = l.UpdateORM(c.Tx.GetDB(), id, c.Mgr, g)
+		err = l.UpdateORM(m, c.Tx.GetDB(), id, g)
 	} else {
 		err = c.Tx.GetDB().Model(m).Where("id=?", id).Updates(m).Error
 	}
@@ -178,8 +177,8 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if l, ok := c.GetService(resource).(CallbackFn); ok {
-		l.Cb(c.Mgr)
+	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
+		l.ChangeCallback(m)
 	}
 	c.OK(g, m)
 }
@@ -194,7 +193,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		return
 	}
 	if l, ok := c.GetService(resource).(CommonModelDelete); ok {
-		err = l.DeleteORM(c.Tx.GetDB(), id, c.Mgr, g)
+		err = l.DeleteORM(c.Tx.GetDB(), id, g)
 	} else {
 		err = c.Tx.GetDB().Where("id=?", id).Delete(m).Error
 	}
@@ -203,8 +202,9 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if l, ok := c.GetService(resource).(CallbackFn); ok {
-		l.Cb(c.Mgr)
+	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
+		m.(CommonModelInf).SetID(id)
+		l.ChangeCallback(m)
 	}
 	c.OK(g, nil)
 }
@@ -220,7 +220,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 	}
 	db := c.Tx.GetDB()
 	if l, ok := c.GetService(resource).(CommonModelGet); ok {
-		db, res, err = l.GetORM(c.Tx.GetDB(), id, c.Mgr, g)
+		db, res, err = l.GetORM(c.Tx.GetDB(), id, g)
 		if err != nil {
 			c.Error(g, err)
 			return
@@ -274,7 +274,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 	}
 	db := c.Tx.GetDB()
 	if l, ok := c.GetService(resource).(CommonModelList); ok {
-		db, res, err = l.ListORM(c.Tx.GetDB(), c.Mgr, g)
+		db, res, err = l.ListORM(c.Tx.GetDB(), g)
 		if err != nil {
 			c.Error(g, err)
 			return
@@ -343,8 +343,8 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 				c.Error(g, err)
 				return
 			}
-			if l, ok := c.GetService(resource).(CallbackFn); ok {
-				l.Cb(c.Mgr)
+			if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
+				l.ChangeCallback(m)
 			}
 			c.OK(g, m)
 			return
@@ -364,8 +364,8 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if l, ok := c.GetService(resource).(CallbackFn); ok {
-		l.Cb(c.Mgr)
+	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
+		l.ChangeCallback(m)
 	}
 	c.OK(g, m)
 }
