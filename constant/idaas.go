@@ -32,3 +32,10 @@ const (
 	AppAuthKindHeader  = "app"
 	UserAuthKindHeader = "user"
 )
+
+const (
+	SelectAction = "select"
+	CreateAction = "create"
+	UpdateAction = "update"
+	DeleteAction = "delete"
+)

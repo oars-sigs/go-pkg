@@ -1,4 +1,4 @@
-package base
+package crud
 
 import (
 	"errors"
@@ -7,13 +7,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"pkg.oars.vip/go-pkg/constant"
+	"pkg.oars.vip/go-pkg/idaas"
+	"pkg.oars.vip/go-pkg/perr"
+	"pkg.oars.vip/go-pkg/server/base"
 )
 
 const (
-	ListKind   = 1
-	CreateKind = 2
-	UpdateKind = 3
-	GetKind    = 4
+	ListKind   = "list"
+	CreateKind = "create"
+	UpdateKind = "update"
+	GetKind    = "get"
+	DeleteKind = "delete"
 )
 
 type ResourceModel interface {
@@ -23,7 +28,7 @@ type ResourceModel interface {
 }
 
 type CommonModelList interface {
-	ListORM(db *gorm.DB, g *gin.Context) (*gorm.DB, interface{}, error)
+	ListORM(db *gorm.DB, g *gin.Context, resourceNames *idaas.ResourceNames) (*gorm.DB, interface{}, error)
 }
 type CommonModelGet interface {
 	GetORM(db *gorm.DB, id string, g *gin.Context) (*gorm.DB, interface{}, error)
@@ -83,20 +88,22 @@ type StoreTransaction interface {
 }
 
 type BaseInfoController struct {
-	*BaseController
-	Tx        StoreTransaction
-	Mgr       any
-	resources map[string]ResourceModel
-	services  map[string]any
+	*base.BaseController
+	Tx            StoreTransaction
+	resources     map[string]ResourceModel
+	services      map[string]any
+	idaas         *idaas.Client
+	resourceGroup string
 }
 
-func NewCrud(b *BaseController, tx StoreTransaction, mgr any) *BaseInfoController {
+func NewCrud(b *base.BaseController, tx StoreTransaction, idaas *idaas.Client, resourceGroup string) *BaseInfoController {
 	return &BaseInfoController{
 		BaseController: b,
 		Tx:             tx,
-		Mgr:            mgr,
+		idaas:          idaas,
 		resources:      make(map[string]ResourceModel),
 		services:       make(map[string]any),
+		resourceGroup:  resourceGroup,
 	}
 }
 
@@ -107,7 +114,7 @@ func (c *BaseInfoController) RegService(m ResourceModel, s any) {
 	c.services[m.ResourceName()] = s
 }
 
-func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind int) (interface{}, error) {
+func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind string) (interface{}, error) {
 	md, ok := c.resources[resource]
 	if !ok {
 		return nil, errors.New("资源不存在")
@@ -140,6 +147,22 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		Group:        c.resourceGroup,
+		Resource:     resource,
+		ResourceName: "#",
+		Action:       constant.CreateAction,
+		UserId:       c.GetUid(g),
+	})
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	if !ok {
+		c.Error(g, perr.ErrForbidden)
+		return
+	}
 	m.(CommonModelInf).GenID()
 	m.(CommonModelInf).SetCreatedBy(c.GetUid(g))
 	if l, ok := c.GetService(resource).(CommonModelCreate); ok {
@@ -167,6 +190,22 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		Group:        c.resourceGroup,
+		Resource:     resource,
+		ResourceName: id,
+		Action:       constant.UpdateAction,
+		UserId:       c.GetUid(g),
+	})
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	if !ok {
+		c.Error(g, perr.ErrForbidden)
+		return
+	}
 	if l, ok := c.GetService(resource).(CommonModelUpdate); ok {
 		err = l.UpdateORM(m, c.Tx.GetDB(), id, g)
 	} else {
@@ -190,6 +229,22 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 	if err != nil {
 		logrus.Error(err)
 		c.Error(g, err)
+		return
+	}
+	ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		Group:        c.resourceGroup,
+		Resource:     resource,
+		ResourceName: id,
+		Action:       constant.DeleteAction,
+		UserId:       c.GetUid(g),
+	})
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	if !ok {
+		c.Error(g, perr.ErrForbidden)
 		return
 	}
 	if l, ok := c.GetService(resource).(CommonModelDelete); ok {
@@ -218,6 +273,22 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		Group:        c.resourceGroup,
+		Resource:     resource,
+		ResourceName: id,
+		Action:       GetKind,
+		UserId:       c.GetUid(g),
+	})
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	if !ok {
+		c.Error(g, perr.ErrForbidden)
+		return
+	}
 	db := c.Tx.GetDB()
 	if l, ok := c.GetService(resource).(CommonModelGet); ok {
 		db, res, err = l.GetORM(c.Tx.GetDB(), id, g)
@@ -240,6 +311,18 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 func (c *BaseInfoController) List(g *gin.Context) {
 	resource := g.Param("resource")
 	q, err := c.GetBaseInfo(resource, nil, GetKind)
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	resources, err := c.idaas.PermissionResources(idaas.EnforceParam{
+		Group:        c.resourceGroup,
+		Resource:     resource,
+		ResourceName: "*",
+		Action:       constant.SelectAction,
+		UserId:       c.GetUid(g),
+	})
 	if err != nil {
 		logrus.Error(err)
 		c.Error(g, err)
@@ -274,13 +357,20 @@ func (c *BaseInfoController) List(g *gin.Context) {
 	}
 	db := c.Tx.GetDB()
 	if l, ok := c.GetService(resource).(CommonModelList); ok {
-		db, res, err = l.ListORM(c.Tx.GetDB(), g)
+		db, res, err = l.ListORM(c.Tx.GetDB(), g, resources)
 		if err != nil {
 			c.Error(g, err)
 			return
 		}
 	} else {
 		db = db.Model(resType)
+		if !resources.All {
+			if len(resources.ResourceNames) == 0 {
+				c.PageOK(g, res, 0, page.PageNum, page.PageSize)
+				return
+			}
+			db = db.Where("id in (?)", resources.ResourceNames)
+		}
 	}
 
 	var total int64
@@ -336,6 +426,22 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 				c.Error(g, err)
 				return
 			}
+			ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+				Group:        c.resourceGroup,
+				Resource:     resource,
+				ResourceName: "#",
+				Action:       constant.CreateAction,
+				UserId:       c.GetUid(g),
+			})
+			if err != nil {
+				logrus.Error(err)
+				c.Error(g, err)
+				return
+			}
+			if !ok {
+				c.Error(g, perr.ErrForbidden)
+				return
+			}
 			m.(CommonModelInf).GenID()
 			err = c.Tx.GetDB().Create(m).Error
 			if err != nil {
@@ -355,6 +461,22 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 	if err != nil {
 		logrus.Error(err)
 		c.Error(g, err)
+		return
+	}
+	ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		Group:        c.resourceGroup,
+		Resource:     resource,
+		ResourceName: res.(CommonModelInf).GetId(),
+		Action:       constant.UpdateAction,
+		UserId:       c.GetUid(g),
+	})
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	if !ok {
+		c.Error(g, perr.ErrForbidden)
 		return
 	}
 	err = c.Tx.GetDB().
