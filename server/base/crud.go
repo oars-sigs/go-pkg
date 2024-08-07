@@ -19,6 +19,7 @@ const (
 type ResourceModel interface {
 	GetResourceModel() interface{}
 	ListResourceModel() interface{}
+	ResourceName() string
 }
 
 type CommonModelList interface {
@@ -100,8 +101,8 @@ func NewCrud(b *BaseController, tx StoreTransaction, mgr any) *BaseInfoControlle
 	}
 }
 
-func (c *BaseInfoController) RegResourceModel(name string, m ResourceModel) {
-	c.Resources[name] = m
+func (c *BaseInfoController) RegResourceModel(m ResourceModel) {
+	c.Resources[m.ResourceName()] = m
 }
 
 func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind int) (interface{}, error) {
