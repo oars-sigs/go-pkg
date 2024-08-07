@@ -71,9 +71,7 @@ type CommonModelInf interface {
 	GenID()
 	SetID(id string)
 	GetId() string
-	Cb(mgr any)
 	Bus() string
-	GenCreate(c any, g *gin.Context) error
 	SetCreatedBy(uid string)
 }
 
@@ -89,7 +87,8 @@ type BaseInfoController struct {
 	*BaseController
 	Tx        StoreTransaction
 	Mgr       any
-	Resources map[string]ResourceModel
+	resources map[string]ResourceModel
+	services  map[string]any
 }
 
 func NewCrud(b *BaseController, tx StoreTransaction, mgr any) *BaseInfoController {
@@ -97,16 +96,20 @@ func NewCrud(b *BaseController, tx StoreTransaction, mgr any) *BaseInfoControlle
 		BaseController: b,
 		Tx:             tx,
 		Mgr:            mgr,
-		Resources:      make(map[string]ResourceModel),
+		resources:      make(map[string]ResourceModel),
+		services:       make(map[string]any),
 	}
 }
 
 func (c *BaseInfoController) RegResourceModel(m ResourceModel) {
-	c.Resources[m.ResourceName()] = m
+	c.resources[m.ResourceName()] = m
+}
+func (c *BaseInfoController) RegService(m ResourceModel, s any) {
+	c.services[m.ResourceName()] = s
 }
 
 func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind int) (interface{}, error) {
-	md, ok := c.Resources[resource]
+	md, ok := c.resources[resource]
 	if !ok {
 		return nil, errors.New("资源不存在")
 	}
@@ -122,6 +125,13 @@ func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind i
 	}
 	return m, nil
 }
+func (c *BaseInfoController) GetService(resource string) any {
+	s, ok := c.services[resource]
+	if ok {
+		return s
+	}
+	return nil
+}
 
 func (c *BaseInfoController) Create(g *gin.Context) {
 	resource := g.Param("resource")
@@ -132,9 +142,8 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		return
 	}
 	m.(CommonModelInf).GenID()
-	m.(CommonModelInf).GenCreate(c.Mgr, g)
 	m.(CommonModelInf).SetCreatedBy(c.GetUid(g))
-	if l, ok := m.(CommonModelCreate); ok {
+	if l, ok := c.GetService(resource).(CommonModelCreate); ok {
 		err = l.CreateORM(c.Tx.GetDB(), c.Mgr, g)
 	} else {
 		err = c.Tx.GetDB().Create(m).Error
@@ -144,7 +153,9 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	m.(CommonModelInf).Cb(c.Mgr)
+	if l, ok := c.GetService(resource).(CallbackFn); ok {
+		l.Cb(c.Mgr)
+	}
 	c.OK(g, m)
 }
 
@@ -157,7 +168,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if l, ok := m.(CommonModelUpdate); ok {
+	if l, ok := c.GetService(resource).(CommonModelUpdate); ok {
 		err = l.UpdateORM(c.Tx.GetDB(), id, c.Mgr, g)
 	} else {
 		err = c.Tx.GetDB().Model(m).Where("id=?", id).Updates(m).Error
@@ -167,7 +178,9 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	m.(CommonModelInf).Cb(c.Mgr)
+	if l, ok := c.GetService(resource).(CallbackFn); ok {
+		l.Cb(c.Mgr)
+	}
 	c.OK(g, m)
 }
 
@@ -180,7 +193,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if l, ok := m.(CommonModelDelete); ok {
+	if l, ok := c.GetService(resource).(CommonModelDelete); ok {
 		err = l.DeleteORM(c.Tx.GetDB(), id, c.Mgr, g)
 	} else {
 		err = c.Tx.GetDB().Where("id=?", id).Delete(m).Error
@@ -190,7 +203,9 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	m.(CommonModelInf).Cb(c.Mgr)
+	if l, ok := c.GetService(resource).(CallbackFn); ok {
+		l.Cb(c.Mgr)
+	}
 	c.OK(g, nil)
 }
 
@@ -204,7 +219,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		return
 	}
 	db := c.Tx.GetDB()
-	if l, ok := res.(CommonModelGet); ok {
+	if l, ok := c.GetService(resource).(CommonModelGet); ok {
 		db, res, err = l.GetORM(c.Tx.GetDB(), id, c.Mgr, g)
 		if err != nil {
 			c.Error(g, err)
@@ -258,7 +273,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		return
 	}
 	db := c.Tx.GetDB()
-	if l, ok := resType.(CommonModelList); ok {
+	if l, ok := c.GetService(resource).(CommonModelList); ok {
 		db, res, err = l.ListORM(c.Tx.GetDB(), c.Mgr, g)
 		if err != nil {
 			c.Error(g, err)
@@ -328,7 +343,9 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 				c.Error(g, err)
 				return
 			}
-			m.(CommonModelInf).Cb(c.Mgr)
+			if l, ok := c.GetService(resource).(CallbackFn); ok {
+				l.Cb(c.Mgr)
+			}
 			c.OK(g, m)
 			return
 		}
@@ -347,6 +364,8 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	m.(CommonModelInf).Cb(c.Mgr)
+	if l, ok := c.GetService(resource).(CallbackFn); ok {
+		l.Cb(c.Mgr)
+	}
 	c.OK(g, m)
 }
