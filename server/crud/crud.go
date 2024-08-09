@@ -46,6 +46,16 @@ type CommonModelChangeCallback interface {
 	ChangeCallback(data any)
 }
 
+type UpdateResourceModel interface {
+	UpdateResourceModel() interface{}
+}
+type CreateResourceModel interface {
+	CreateResourceModel() interface{}
+}
+type DeleteResourceModel interface {
+	DeleteResourceModel() interface{}
+}
+
 type CommonModel struct {
 	Id        string         `json:"id" gorm:"column:id;size:40"`
 	Created   int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
@@ -126,6 +136,21 @@ func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind s
 	m := md.GetResourceModel()
 	if kind == ListKind {
 		m = md.ListResourceModel()
+	}
+	if kind == UpdateKind {
+		if um, ok := md.(UpdateResourceModel); ok {
+			m = um.UpdateResourceModel()
+		}
+	}
+	if kind == CreateKind {
+		if um, ok := md.(CreateResourceModel); ok {
+			m = um.CreateResourceModel()
+		}
+	}
+	if kind == DeleteKind {
+		if um, ok := md.(DeleteResourceModel); ok {
+			m = um.DeleteResourceModel()
+		}
 	}
 	if g != nil {
 		err := g.ShouldBindJSON(m)
@@ -311,7 +336,12 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 			return
 		}
 	} else {
-		db = db.Where("id=?", id)
+		if v, ok := BuildGetORM(res, db); ok {
+			db = v
+			db = db.Where("m.id=?", id)
+		} else {
+			db = db.Where("id=?", id)
+		}
 	}
 	err = db.First(res).Error
 	if err != nil {
@@ -383,7 +413,13 @@ func (c *BaseInfoController) List(g *gin.Context) {
 			return
 		}
 	} else {
-		db = db.Model(resType)
+		borm, ok := BuildListORM(res, db)
+		if ok {
+			db = borm
+		} else {
+			db = db.Model(resType)
+		}
+
 		if !resources.All {
 			if len(resources.ResourceNames) == 0 {
 				if pageNum != "" {
@@ -393,7 +429,11 @@ func (c *BaseInfoController) List(g *gin.Context) {
 				c.OK(g, res)
 				return
 			}
-			db = db.Where("id in (?)", resources.ResourceNames)
+			if ok {
+				db = db.Where("m.id in (?)", resources.ResourceNames)
+			} else {
+				db = db.Where("id in (?)", resources.ResourceNames)
+			}
 		}
 	}
 
