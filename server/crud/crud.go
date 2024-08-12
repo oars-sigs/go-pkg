@@ -57,11 +57,15 @@ type DeleteResourceModel interface {
 }
 
 type CommonModel struct {
-	Id        string         `json:"id" gorm:"column:id;size:40"`
-	Created   int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
-	Updated   int64          `json:"updated" gorm:"column:updated;autoUpdateTime:milli;comment:更新时间戳"`
-	CreatedBy string         `json:"createdBy" gorm:"column:created_by;size:255;comment:创建用户ID"`
-	DeletedAt gorm.DeletedAt `json:"deleteAt" gorm:"index"`
+	Id         string         `json:"id" gorm:"column:id;size:40"`
+	Created    int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
+	Updated    int64          `json:"updated" gorm:"column:updated;autoUpdateTime:milli;comment:更新时间戳"`
+	CreatedBy  string         `json:"createdBy" gorm:"column:created_by;size:255;comment:创建用户ID"`
+	SearchText string         `json:"searchText" gorm:"column:search_text;size:1024;comment:搜索字段"`
+	DeletedAt  gorm.DeletedAt `json:"deleteAt" gorm:"index"`
+}
+type CommonSearchModel struct {
+	Id string `json:"id" gorm:"column:id;size:40"`
 }
 
 func (m *CommonModel) GenID() {
@@ -196,6 +200,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 	}
 	m.(CommonModelInf).GenID()
 	m.(CommonModelInf).SetCreatedBy(c.GetUid(g))
+	BuildCreateGen(m)
 	if l, ok := c.GetService(resource).(CommonModelCreate); ok {
 		err = l.CreateORM(m, c.Tx.GetDB(), g)
 	} else {
@@ -239,7 +244,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 			return
 		}
 	}
-
+	BuildUpdateGen(m)
 	if l, ok := c.GetService(resource).(CommonModelUpdate); ok {
 		err = l.UpdateORM(m, c.Tx.GetDB(), id, g)
 	} else {
