@@ -76,7 +76,6 @@ func buildORM(typeObj reflect.Type, db *gorm.DB) (*gorm.DB, bool) {
 			db = db.Where(t)
 		}
 		if typeObj.Field(i).Type.Kind() == reflect.Struct {
-			ok = true
 			buildORM(typeObj.Field(i).Type, db)
 		}
 	}
