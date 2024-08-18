@@ -88,3 +88,8 @@ func (c *BaseController) GetUid(g *gin.Context) string {
 	s, _ := g.Get(constant.CtxKeyUserId)
 	return s.(string)
 }
+
+func (c *BaseController) GetAppId(g *gin.Context) string {
+	s := g.GetHeader(constant.ProxyAppIDHeader)
+	return s
+}

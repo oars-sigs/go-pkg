@@ -63,6 +63,7 @@ type CommonModel struct {
 	CreatedBy  string         `json:"createdBy" gorm:"column:created_by;size:255;comment:创建用户ID"`
 	SearchText string         `json:"searchText" gorm:"column:search_text;size:1024;comment:搜索字段"`
 	DeletedAt  gorm.DeletedAt `json:"deleteAt" gorm:"index"`
+	AppId      string         `json:"appId" gorm:"column:app_id;comment:应用ID"`
 }
 type CommonSearchModel struct {
 	Id string `json:"id" gorm:"column:id;size:40"`
@@ -81,6 +82,9 @@ func (m *CommonModel) GetId() string {
 func (m *CommonModel) Bus() string {
 	return "ID"
 }
+func (m *CommonModel) SetAppId(appId string) {
+	m.AppId = appId
+}
 
 func (m *CommonModel) GenCreate(c any, g *gin.Context) error {
 	return nil
@@ -95,6 +99,7 @@ type CommonModelInf interface {
 	GetId() string
 	Bus() string
 	SetCreatedBy(uid string)
+	SetAppId(appId string)
 }
 
 type StoreTransaction interface {
@@ -108,10 +113,12 @@ type BaseInfoController struct {
 	services      map[string]any
 	idaas         *idaas.Client
 	resourceGroup string
+	opt           *Option
 }
 
 type Option struct {
-	ResourceGroup string
+	ResourceGroup   string
+	OperationLogSrv OperationLogService
 }
 
 func NewCrud(b *base.BaseController, tx StoreTransaction, idaas *idaas.Client, opt *Option) *BaseInfoController {
@@ -122,6 +129,7 @@ func NewCrud(b *base.BaseController, tx StoreTransaction, idaas *idaas.Client, o
 		resources:      make(map[string]ResourceModel),
 		services:       make(map[string]any),
 		resourceGroup:  opt.ResourceGroup,
+		opt:            opt,
 	}
 }
 
@@ -200,6 +208,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 	}
 	m.(CommonModelInf).GenID()
 	m.(CommonModelInf).SetCreatedBy(c.GetUid(g))
+	m.(CommonModelInf).SetAppId(c.GetAppId(g))
 	BuildCreateGen(m)
 	if l, ok := c.GetService(resource).(CommonModelCreate); ok {
 		err = l.CreateORM(m, c.Tx.GetDB(), g)
@@ -214,6 +223,16 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
 		l.ChangeCallback(m)
 	}
+
+	if c.opt.OperationLogSrv != nil {
+		log := &OperationLog{
+			Resource:     resource,
+			ResourceName: m.(CommonModelInf).GetId(),
+			Action:       CreateKind,
+		}
+		c.genOperationLog(log, nil, m)
+	}
+
 	c.OK(g, m)
 }
 
@@ -258,6 +277,14 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
 		l.ChangeCallback(m)
 	}
+	if c.opt.OperationLogSrv != nil {
+		log := &OperationLog{
+			Resource:     resource,
+			ResourceName: m.(CommonModelInf).GetId(),
+			Action:       UpdateKind,
+		}
+		c.genOperationLog(log, nil, m)
+	}
 	c.OK(g, m)
 }
 
@@ -301,6 +328,14 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
 		m.(CommonModelInf).SetID(id)
 		l.ChangeCallback(m)
+	}
+	if c.opt.OperationLogSrv != nil {
+		log := &OperationLog{
+			Resource:     resource,
+			ResourceName: m.(CommonModelInf).GetId(),
+			Action:       DeleteKind,
+		}
+		c.genOperationLog(log, nil, m)
 	}
 	c.OK(g, nil)
 }
@@ -353,6 +388,14 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		logrus.Error(err)
 		c.Error(g, err)
 		return
+	}
+	if c.opt.OperationLogSrv != nil {
+		log := &OperationLog{
+			Resource:     resource,
+			ResourceName: id,
+			Action:       GetKind,
+		}
+		c.genOperationLog(log, nil, res)
 	}
 	c.OK(g, res)
 }
@@ -444,7 +487,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 
 	var total int64
 	if pageNum != "" {
-		err = db.Count(&total).Error
+		err = db.Where(q).Count(&total).Error
 		if err != nil {
 			c.Error(g, err)
 			return
