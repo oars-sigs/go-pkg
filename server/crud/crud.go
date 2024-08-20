@@ -57,13 +57,13 @@ type DeleteResourceModel interface {
 }
 
 type CommonModel struct {
-	Id         string         `json:"id" gorm:"column:id;size:40"`
+	Id         string         `json:"id" gorm:"column:id;type:varchar;size:40"`
 	Created    int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
 	Updated    int64          `json:"updated" gorm:"column:updated;autoUpdateTime:milli;comment:更新时间戳"`
-	CreatedBy  string         `json:"createdBy" gorm:"column:created_by;size:255;comment:创建用户ID"`
-	SearchText string         `json:"searchText" gorm:"column:search_text;size:1024;comment:搜索字段"`
+	CreatedBy  string         `json:"createdBy" gorm:"column:created_by;type:varchar;size:255;comment:创建用户ID"`
+	SearchText string         `json:"searchText" gorm:"column:search_text;type:varchar;size:1024;comment:搜索字段"`
 	DeletedAt  gorm.DeletedAt `json:"deleteAt" gorm:"index"`
-	AppId      string         `json:"appId" gorm:"column:app_id;comment:应用ID"`
+	AppId      string         `json:"appId" gorm:"column:app_id;type:varchar;size:255;comment:应用ID"`
 }
 type CommonSearchModel struct {
 	Id string `json:"id" gorm:"column:id;size:40"`
@@ -229,7 +229,12 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 			Resource:     resource,
 			ResourceName: m.(CommonModelInf).GetId(),
 			Action:       CreateKind,
+			CommonModel: CommonModel{
+				CreatedBy: c.GetUid(g),
+				AppId:     c.GetAppId(g),
+			},
 		}
+		log.GenID()
 		c.genOperationLog(log, nil, m)
 	}
 
@@ -282,7 +287,12 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 			Resource:     resource,
 			ResourceName: m.(CommonModelInf).GetId(),
 			Action:       UpdateKind,
+			CommonModel: CommonModel{
+				CreatedBy: c.GetUid(g),
+				AppId:     c.GetAppId(g),
+			},
 		}
+		log.GenID()
 		c.genOperationLog(log, nil, m)
 	}
 	c.OK(g, m)
@@ -334,7 +344,12 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 			Resource:     resource,
 			ResourceName: m.(CommonModelInf).GetId(),
 			Action:       DeleteKind,
+			CommonModel: CommonModel{
+				CreatedBy: c.GetUid(g),
+				AppId:     c.GetAppId(g),
+			},
 		}
+		log.GenID()
 		c.genOperationLog(log, nil, m)
 	}
 	c.OK(g, nil)
@@ -394,7 +409,12 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 			Resource:     resource,
 			ResourceName: id,
 			Action:       GetKind,
+			CommonModel: CommonModel{
+				CreatedBy: c.GetUid(g),
+				AppId:     c.GetAppId(g),
+			},
 		}
+		log.GenID()
 		c.genOperationLog(log, nil, res)
 	}
 	c.OK(g, res)
