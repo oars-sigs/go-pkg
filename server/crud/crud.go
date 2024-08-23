@@ -272,7 +272,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 	if err != nil {
 		logrus.Error(err)
 	}
-	err = c.Tx.GetDB().Model(m).Where("id=?", id).First(oldRes).Error
+	err = c.Tx.GetDB().Model(oldRes).Where("id=?", id).First(oldRes).Error
 	if err != nil {
 		logrus.Error(err)
 	}
