@@ -10,10 +10,10 @@ import (
 
 type OperationLog struct {
 	CommonModel
-	Resource      string `json:"resource" gorm:"column:resource;size:255;comment:资源"`
-	ResourceName  string `json:"resourceName" gorm:"column:resource_name;size:255;comment:资源实例"`
-	ResourceTitle string `json:"resourceTitle" gorm:"column:resource_title;size:255;comment:资源实例标题"`
-	Action        string `json:"action" gorm:"column:action;size:255;comment:操作"`
+	Resource      string `json:"resource" gorm:"column:resource;type:varchar(255);size:255;comment:资源"`
+	ResourceName  string `json:"resourceName" gorm:"column:resource_name;type:varchar(255);size:255;comment:资源实例"`
+	ResourceTitle string `json:"resourceTitle" gorm:"column:resource_title;type:varchar(255);size:255;comment:资源实例标题"`
+	Action        string `json:"action" gorm:"column:action;type:varchar(255);size:255;comment:操作"`
 	Content       string `json:"content" gorm:"column:content;comment:操作内容"`
 }
 
