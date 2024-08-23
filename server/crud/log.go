@@ -29,7 +29,7 @@ func (c *BaseInfoController) genOperationLog(l *OperationLog, oldRes, curRes any
 	if fn, ok := curRes.(CommonModelTitle); ok {
 		l.ResourceTitle = fn.GetTitle()
 	}
-	if l.Action == UpdateKind {
+	if l.Action == UpdateKind || l.Action == CreateKind {
 		l.Content = operationLogContent(oldRes, curRes)
 	}
 	err := c.opt.OperationLogSrv.Create(l)
@@ -48,6 +48,9 @@ func operationLogContent(oldRes, curRes any) string {
 				continue
 			}
 			contents = append(contents, fmt.Sprintf("%s:%s->%s", k, v1, v))
+		}
+		if oldFileds == nil {
+			contents = append(contents, fmt.Sprintf("%s:%s", k, v))
 		}
 	}
 	return strings.Join(contents, ";")

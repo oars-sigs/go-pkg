@@ -268,7 +268,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 			return
 		}
 	}
-	oldRes, err := c.GetBaseInfo(resource, g, UpdateKind)
+	oldRes, err := c.GetBaseInfo(resource, nil, UpdateKind)
 	if err != nil {
 		logrus.Error(err)
 	}
