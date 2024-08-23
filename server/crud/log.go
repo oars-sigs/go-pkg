@@ -54,6 +54,9 @@ func operationLogContent(oldRes, curRes any) string {
 }
 
 func getOperationFileds(res any) map[string]string {
+	if res == nil {
+		return nil
+	}
 	typeObj := reflect.TypeOf(res).Elem()
 	valueObj := reflect.ValueOf(res).Elem()
 	fitemts := make(map[string]string)

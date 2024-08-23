@@ -268,6 +268,14 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 			return
 		}
 	}
+	oldRes, err := c.GetBaseInfo(resource, g, UpdateKind)
+	if err != nil {
+		logrus.Error(err)
+	}
+	err = c.Tx.GetDB().Model(m).Where("id=?", id).First(oldRes).Error
+	if err != nil {
+		logrus.Error(err)
+	}
 	BuildUpdateGen(m)
 	if l, ok := c.GetService(resource).(CommonModelUpdate); ok {
 		err = l.UpdateORM(m, c.Tx.GetDB(), id, g)
@@ -293,7 +301,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 			},
 		}
 		log.GenID()
-		c.genOperationLog(log, nil, m)
+		c.genOperationLog(log, oldRes, m)
 	}
 	c.OK(g, m)
 }
