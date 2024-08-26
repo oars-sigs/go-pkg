@@ -3,7 +3,8 @@ package flow
 import (
 	"reflect"
 
-	"github.com/antonmedv/expr"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/vm"
 )
 
 func Eval(s string, vars *Gvars) (interface{}, error) {
@@ -11,7 +12,11 @@ func Eval(s string, vars *Gvars) (interface{}, error) {
 	envs["getOne"] = getOne
 	vars.mutex.Lock()
 	defer vars.mutex.Unlock()
-	return expr.Eval(s, envs)
+	p, err := expr.Compile(s, expr.Env(envs))
+	if err != nil {
+		return nil, err
+	}
+	return vm.Run(p, envs)
 }
 
 func getOne(p interface{}) interface{} {

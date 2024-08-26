@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"maps"
 	"strings"
 	"sync"
 
@@ -47,9 +48,9 @@ func (p *Gvars) Vars() map[string]interface{} {
 	defer p.mutex.Unlock()
 	res := make(map[string]interface{})
 	vars := p.data
-	res["values"] = mapcopy(vars.Values)
-	res["ctx"] = mapcopy(vars.Ctx)
-	res["global"] = vars.Global
+	res["values"] = maps.Clone(vars.Values)
+	res["ctx"] = maps.Clone(vars.Ctx)
+	res["global"] = maps.Clone(vars.Global)
 	return res
 }
 

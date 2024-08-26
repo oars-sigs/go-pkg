@@ -26,21 +26,21 @@ tasks:
   #   output: $.values.ddd
   #   debug: true
   # - print: $.values.ddd
-  # - print: dd
-  #   when: values.aa == "ck"
+  - print: dd
+    when: values.ss.a.aa[0] == 1
   # - print: $.ctx.itemKey
   #   loop: $.values.ss
-  - tasks:
-    - print: $.ctx.item
-    - setface: $.ctx.item
-      output: $.ctx.a
-      debug: true
-    - print: $.ctx.a
-    - tasks:
-      - print: $.ctx.item
-        loop: $.ctx.item
-      loop: $.ctx.item
-    loop: $.values.ss
+  # - tasks:
+  #   - print: $.ctx.item
+  #   - setface: $.ctx.item
+  #     output: $.ctx.a
+  #     debug: true
+  #   - print: $.ctx.a
+  #   - tasks:
+  #     - print: $.ctx.item
+  #       loop: $.ctx.item
+  #     loop: $.ctx.item
+  #   loop: $.values.ss
   # - print: $.values.aaa.ddd
   # - defer:
   #   - print: defer aaaaa
