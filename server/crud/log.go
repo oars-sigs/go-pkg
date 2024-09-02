@@ -22,7 +22,7 @@ type CommonModelTitle interface {
 }
 
 type OperationLogService interface {
-	Create(l *OperationLog) error
+	Create(l any) error
 }
 
 func (c *BaseInfoController) genOperationLog(l *OperationLog, oldRes, curRes any) {
