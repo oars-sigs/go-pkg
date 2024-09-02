@@ -18,6 +18,10 @@ const (
 	TaskConfirmStatus = 9
 
 	ReleaseModelKind = "release"
+
+	TaskEvent   = "task"
+	NodeEvent   = "node"
+	StatusEvent = "status"
 )
 
 var TaskStatusNames = map[int]string{

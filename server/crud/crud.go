@@ -189,7 +189,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		return
 	}
 	if c.resourceGroup != "" {
-		ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 			Group:        c.resourceGroup,
 			Resource:     resource,
 			ResourceName: "#",
@@ -251,7 +251,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		return
 	}
 	if c.resourceGroup != "" {
-		ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 			Group:        c.resourceGroup,
 			Resource:     resource,
 			ResourceName: id,
@@ -316,7 +316,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		return
 	}
 	if c.resourceGroup != "" {
-		ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 			Group:        c.resourceGroup,
 			Resource:     resource,
 			ResourceName: id,
@@ -373,7 +373,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		return
 	}
 	if c.resourceGroup != "" {
-		ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 			Group:        c.resourceGroup,
 			Resource:     resource,
 			ResourceName: id,
@@ -440,7 +440,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		All: true,
 	}
 	if c.resourceGroup != "" {
-		resources, err = c.idaas.PermissionResources(idaas.EnforceParam{
+		resources, err = c.idaas.GetClient(g).PermissionResources(idaas.EnforceParam{
 			Group:        c.resourceGroup,
 			Resource:     resource,
 			ResourceName: "*",
@@ -572,7 +572,7 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 				return
 			}
 			if c.resourceGroup != "" {
-				ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+				ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 					Group:        c.resourceGroup,
 					Resource:     resource,
 					ResourceName: "#",
@@ -611,7 +611,7 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 		return
 	}
 	if c.resourceGroup != "" {
-		ok, err := c.idaas.PermissionEnforce(idaas.EnforceParam{
+		ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 			Group:        c.resourceGroup,
 			Resource:     resource,
 			ResourceName: res.(CommonModelInf).GetId(),

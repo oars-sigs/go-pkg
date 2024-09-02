@@ -23,6 +23,8 @@ type Config struct {
 	AppID string
 	//AppSecret 应用secret
 	AppSecret string
+	//多个应用配置
+	Apps map[string]string
 }
 
 // Client filebase client
@@ -31,7 +33,26 @@ type Client struct {
 }
 
 func New(cfg *Config) *Client {
+	if cfg.AppID == "" {
+		for k, v := range cfg.Apps {
+			cfg.AppID = k
+			cfg.AppSecret = v
+			break
+		}
+	}
 	return &Client{cfg}
+}
+
+func (c *Client) GetClient(g *gin.Context) *Client {
+	appId, _ := c.AppID(g)
+	return c.GetClientByAppId(appId)
+}
+
+func (c *Client) GetClientByAppId(appId string) *Client {
+	if s, ok := c.cfg.Apps[appId]; ok {
+		return &Client{&Config{AppID: appId, AppSecret: s, Address: c.cfg.Address, Apps: c.cfg.Apps}}
+	}
+	return c
 }
 
 func (c *Client) SetAuthHeader(headers map[string]string) map[string]string {
@@ -183,7 +204,12 @@ type TokenClaims struct {
 
 func (c *Client) Auth(g *gin.Context) (*TokenInfo, error) {
 	tokenStr := g.GetHeader(constant.ProxyUserTokenHeader)
-	s, _ := base64.URLEncoding.DecodeString(c.cfg.AppSecret)
+	appId, _ := c.AppID(g)
+	appSecret := c.cfg.AppSecret
+	if s, ok := c.cfg.Apps[appId]; ok {
+		appSecret = s
+	}
+	s, _ := base64.URLEncoding.DecodeString(appSecret)
 	token, err := jwt.ParseWithClaims(tokenStr, &TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method %s", token.Header["alg"])
