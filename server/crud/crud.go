@@ -43,7 +43,7 @@ type CommonModelDelete interface {
 	DeleteORM(db *gorm.DB, id string, g *gin.Context) error
 }
 type CommonModelChangeCallback interface {
-	ChangeCallback(data any)
+	ChangeCallback(data any, action string)
 }
 
 type UpdateResourceModel interface {
@@ -221,7 +221,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		return
 	}
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
-		l.ChangeCallback(m)
+		l.ChangeCallback(m, CreateKind)
 	}
 
 	if c.opt.OperationLogSrv != nil {
@@ -288,7 +288,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		return
 	}
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
-		l.ChangeCallback(m)
+		l.ChangeCallback(m, UpdateKind)
 	}
 	if c.opt.OperationLogSrv != nil {
 		log := &OperationLog{
@@ -345,7 +345,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 	}
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
 		m.(CommonModelInf).SetID(id)
-		l.ChangeCallback(m)
+		l.ChangeCallback(m, DeleteKind)
 	}
 	if c.opt.OperationLogSrv != nil {
 		log := &OperationLog{
@@ -597,7 +597,7 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 				return
 			}
 			if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
-				l.ChangeCallback(m)
+				l.ChangeCallback(m, CreateKind)
 			}
 			c.OK(g, m)
 			return
@@ -637,7 +637,7 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 		return
 	}
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
-		l.ChangeCallback(m)
+		l.ChangeCallback(m, UpdateKind)
 	}
 	c.OK(g, m)
 }
