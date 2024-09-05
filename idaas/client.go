@@ -183,6 +183,9 @@ func (c *Client) User(userId string, useBindPool bool) (*UserInfo, error) {
 }
 
 func (c *Client) UserId(g *gin.Context) (string, error) {
+	if uid, ok := g.Get(constant.CtxKeyUserId); ok {
+		return uid.(string), nil
+	}
 	uid := g.GetHeader(constant.ProxyUserIDHeader)
 	if uid == "" {
 		return "", perr.ErrUnauthorized
