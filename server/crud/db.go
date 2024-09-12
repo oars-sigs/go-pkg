@@ -19,11 +19,13 @@ type BuildORMOption struct {
 }
 
 func BuildListORM(data any, db *gorm.DB, opt *BuildORMOption) (*gorm.DB, bool) {
-	return buildORM(data, db, opt)
+	typeObj := reflect.TypeOf(data).Elem()
+	return buildORM(typeObj, db, opt)
 }
 
 func BuildGetORM(data any, db *gorm.DB) (*gorm.DB, bool) {
-	return buildORM(data, db, nil)
+	typeObj := reflect.TypeOf(data).Elem()
+	return buildORM(typeObj, db, nil)
 }
 
 func BuildCreateGen(data any) {
@@ -61,16 +63,64 @@ func BuildGen(data any, kind string) {
 	valueObj.FieldByName("SearchText").Set(reflect.ValueOf(searchText))
 }
 
-func buildORM(data any, db *gorm.DB, opt *BuildORMOption) (*gorm.DB, bool) {
+func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB, bool) {
 	if opt == nil {
 		opt = new(BuildORMOption)
 	}
-	typeObj := reflect.TypeOf(data).Elem()
+	selectFileds := make([]string, 0)
+	searchFileds := make([]string, 0)
+	var res *buildOrmRes
+	db, res = buildORMItem(typeObj, db, &selectFileds, &searchFileds)
+	//如果有关联表且没定义table
+	if res.IsJoin && !res.IsTable {
+		modelValue := reflect.New(typeObj)
+		if tabler, ok := modelValue.Interface().(ResourceTable); ok {
+			db = db.Table(tabler.TableName() + " as m")
+		}
+		selectFileds = append(selectFileds, "m.*")
+	}
+	if len(selectFileds) > 0 {
+		db = db.Select(strings.Join(selectFileds, ","))
+	}
+	//搜索字段
+	if opt.Search != "" && len(searchFileds) > 0 {
+
+		var searchQs []string
+		var ps []interface{}
+		for _, s := range searchFileds {
+			if res.IsJoin {
+				fmt.Println(s, strings.Split(s, "."))
+				if !strings.Contains(s, ".") {
+					s = "m." + s
+				}
+			}
+			searchQs = append(searchQs, s+" LIKE ?")
+			ps = append(ps, `%`+opt.Search+`%`)
+		}
+		fmt.Println(strings.Join(searchQs, " OR "), ps)
+		db = db.Where(strings.Join(searchQs, " OR "), ps...)
+	}
+	if opt.SearchText != "" {
+		s := "search_text"
+		if res.IsJoin {
+			s = "m." + s
+		}
+		db = db.Where(s+" LIKE ?", opt.SearchText)
+	}
+	return db, res.Change
+}
+
+type buildOrmRes struct {
+	IsJoin  bool
+	IsTable bool
+	Change  bool
+}
+
+func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds *[]string) (*gorm.DB, *buildOrmRes) {
 	ok := false
 	isJoin := false
 	isTable := false
-	var ss []string
-	var searchFileds []string
+	db = db.Debug()
 	for i := 0; i < typeObj.NumField(); i++ {
 		tags := getTags(typeObj.Field(i).Tag.Get("gsql"))
 		if tags.Table != "" {
@@ -85,54 +135,31 @@ func buildORM(data any, db *gorm.DB, opt *BuildORMOption) (*gorm.DB, bool) {
 		}
 		for _, t := range tags.Select {
 			ok = true
-			ss = append(ss, t)
+			*selectFileds = append(*selectFileds, t)
 		}
 		for _, t := range tags.Wheres {
 			ok = true
 			db = db.Where(t)
 		}
 		if tags.Search != "" {
-			searchFileds = append(searchFileds, tags.Search)
+			*searchFileds = append(*searchFileds, tags.Search)
 		}
 		if typeObj.Field(i).Type.Kind() == reflect.Struct {
-			buildORM(typeObj.Field(i).Type, db, opt)
-		}
-	}
-	//如果有关联表且没定义table
-	if isJoin && !isTable {
-		valueObj := reflect.ValueOf(data).Elem()
-		if v, ok := valueObj.Interface().(ResourceTable); ok {
-			db = db.Table(v.TableName() + " as m")
-		}
-		ss = append(ss, "m.*")
-	}
-	if len(ss) > 0 {
-		db = db.Select(strings.Join(ss, ","))
-	}
-	//搜索字段
-	if opt.Search != "" && len(searchFileds) > 0 {
-
-		var searchQs []string
-		var ps []string
-		for _, s := range searchFileds {
-			if isJoin {
-				if len(strings.Split(s, ".")) == 1 {
-					s = "m." + s
-				}
+			vdb, res := buildORMItem(typeObj.Field(i).Type, db, selectFileds, searchFileds)
+			if res.IsJoin {
+				isJoin = res.IsJoin
 			}
-			searchQs = append(searchQs, s+" LIKE ?")
-			ps = append(ps, `%`+opt.Search+`%`)
+			if res.IsTable {
+				isTable = res.IsTable
+			}
+			if res.Change {
+				ok = res.Change
+			}
+			db = vdb
 		}
-		db = db.Where(strings.Join(searchQs, " OR "), ps)
 	}
-	if opt.SearchText != "" {
-		s := "search_text"
-		if isJoin {
-			s = "m." + s
-		}
-		db = db.Where(s+" LIKE ?", opt.SearchText)
-	}
-	return db, ok
+
+	return db, &buildOrmRes{IsJoin: isJoin, IsTable: isTable, Change: ok}
 }
 
 type gSql struct {
