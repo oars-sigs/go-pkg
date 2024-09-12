@@ -89,7 +89,6 @@ func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB,
 		var ps []interface{}
 		for _, s := range searchFileds {
 			if res.IsJoin {
-				fmt.Println(s, strings.Split(s, "."))
 				if !strings.Contains(s, ".") {
 					s = "m." + s
 				}
@@ -97,7 +96,6 @@ func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB,
 			searchQs = append(searchQs, s+" LIKE ?")
 			ps = append(ps, `%`+opt.Search+`%`)
 		}
-		fmt.Println(strings.Join(searchQs, " OR "), ps)
 		db = db.Where(strings.Join(searchQs, " OR "), ps...)
 	}
 	if opt.SearchText != "" {
