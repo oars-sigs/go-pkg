@@ -120,7 +120,6 @@ func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds 
 	ok := false
 	isJoin := false
 	isTable := false
-	db = db.Debug()
 	for i := 0; i < typeObj.NumField(); i++ {
 		tags := getTags(typeObj.Field(i).Tag.Get("gsql"))
 		if tags.Table != "" {
