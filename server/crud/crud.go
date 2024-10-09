@@ -30,9 +30,19 @@ type ResourceModel interface {
 type CommonModelList interface {
 	ListORM(db *gorm.DB, g *gin.Context, resourceNames *idaas.ResourceNames) (*gorm.DB, interface{}, error)
 }
+
+type CommonModelListGen interface {
+	ListGen(any) any
+}
+
 type CommonModelGet interface {
 	GetORM(db *gorm.DB, id string, g *gin.Context) (*gorm.DB, interface{}, error)
 }
+
+type CommonModelGetGen interface {
+	GetGen(any) any
+}
+
 type CommonModelCreate interface {
 	CreateORM(data any, db *gorm.DB, g *gin.Context) error
 }
@@ -425,6 +435,9 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		log.GenID()
 		c.genOperationLog(log, nil, res)
 	}
+	if l, ok := c.GetService(resource).(CommonModelGetGen); ok {
+		res = l.GetGen(res)
+	}
 	c.OK(g, res)
 }
 
@@ -536,7 +549,9 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-
+	if l, ok := c.GetService(resource).(CommonModelListGen); ok {
+		res = l.ListGen(res)
+	}
 	if pageNum != "" {
 		c.PageOK(g, res, int(total), page.PageNum, page.PageSize)
 		return
