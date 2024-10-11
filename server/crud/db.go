@@ -179,7 +179,14 @@ func getTags(s string) *gSql {
 		}
 		switch keys[0] {
 		case "join":
-			res.Joins = append(res.Joins, keys[1])
+			d := keys[1]
+			if !strings.Contains(d, "deleted_at") {
+				ss := strings.Split(d, " as ")
+				if len(ss) > 1 {
+					d = d + " AND " + strings.Split(strings.TrimSpace(ss[1]), " ")[0] + ".deleted_at is NULL"
+				}
+			}
+			res.Joins = append(res.Joins, d)
 		case "select":
 			res.Select = append(res.Select, keys[1])
 		case "where":

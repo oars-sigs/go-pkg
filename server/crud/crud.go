@@ -533,7 +533,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 
 	var total int64
 	if pageNum != "" {
-		err = db.Where(q).Count(&total).Error
+		err = db.Where(CommonModel{DeletedAt: gorm.DeletedAt{Valid: false}}).Where(q).Count(&total).Error
 		if err != nil {
 			c.Error(g, err)
 			return
