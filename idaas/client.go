@@ -55,6 +55,15 @@ func (c *Client) GetClientByAppId(appId string) *Client {
 	return c
 }
 
+func (c *Client) NewClient(g *gin.Context) *Client {
+	appId, _ := c.AppID(g)
+	return c.NewClientByAppId(appId)
+}
+
+func (c *Client) NewClientByAppId(appId string) *Client {
+	return &Client{&Config{AppID: appId, AppSecret: c.cfg.AppSecret, Address: c.cfg.Address, Apps: c.cfg.Apps}}
+}
+
 func (c *Client) SetAuthHeader(headers map[string]string) map[string]string {
 	if headers == nil {
 		headers = make(map[string]string)
