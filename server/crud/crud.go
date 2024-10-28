@@ -66,6 +66,10 @@ type DeleteResourceModel interface {
 	DeleteResourceModel() interface{}
 }
 
+type GetResourceName interface {
+	GetResourceName() (string, string)
+}
+
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
 	Created    int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
@@ -452,22 +456,45 @@ func (c *BaseInfoController) List(g *gin.Context) {
 	resources := &idaas.ResourceNames{
 		All: true,
 	}
+
 	if c.resourceGroup != "" {
-		resources, err = c.idaas.GetClient(g).PermissionResources(idaas.EnforceParam{
-			Group:        c.resourceGroup,
-			Resource:     resource,
-			ResourceName: "*",
-			Action:       constant.SelectAction,
-			UserId:       c.GetUid(g),
-		})
-		if err != nil {
-			logrus.Error(err)
-			c.Error(g, err)
-			return
-		}
-		if resources == nil {
-			resources = &idaas.ResourceNames{
-				All: false,
+		if v, ok := q.(GetResourceName); ok {
+			prResource, prResourceName := v.GetResourceName()
+			if prResource != resource {
+				ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
+					Group:        c.resourceGroup,
+					Resource:     prResource,
+					ResourceName: prResourceName,
+					Action:       GetKind,
+					UserId:       c.GetUid(g),
+				})
+				if err != nil {
+					logrus.Error(err)
+					c.Error(g, err)
+					return
+				}
+				if !ok {
+					c.Error(g, perr.ErrForbidden)
+					return
+				}
+			}
+		} else {
+			resources, err = c.idaas.GetClient(g).PermissionResources(idaas.EnforceParam{
+				Group:        c.resourceGroup,
+				Resource:     resource,
+				ResourceName: "*",
+				Action:       constant.SelectAction,
+				UserId:       c.GetUid(g),
+			})
+			if err != nil {
+				logrus.Error(err)
+				c.Error(g, err)
+				return
+			}
+			if resources == nil {
+				resources = &idaas.ResourceNames{
+					All: false,
+				}
 			}
 		}
 	}
