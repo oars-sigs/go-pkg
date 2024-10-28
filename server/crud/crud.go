@@ -364,6 +364,18 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 	c.OK(g, m)
 }
 
+func (c *BaseInfoController) getRes(resource, id string) (any, error) {
+	q, err := c.GetBaseInfo(resource, nil, GetKind)
+	if err != nil {
+		return nil, err
+	}
+	err = c.Tx.GetDB().Where("id=?", id).First(&q).Error
+	if err != nil {
+		return nil, err
+	}
+	return q, nil
+}
+
 func (c *BaseInfoController) Delete(g *gin.Context) {
 	id := g.Param("id")
 	resource := g.Param("resource")
@@ -374,7 +386,8 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		return
 	}
 	if c.resourceGroup != "" {
-		if v, ok := m.(GetResourceName); ok {
+		q, _ := c.getRes(resource, id)
+		if v, ok := q.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
 			if prResource != resource {
 				ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
@@ -541,6 +554,12 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	err = g.ShouldBindQuery(q)
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
 	resources := &idaas.ResourceNames{
 		All: true,
 	}
@@ -585,13 +604,6 @@ func (c *BaseInfoController) List(g *gin.Context) {
 				}
 			}
 		}
-	}
-
-	err = g.ShouldBindQuery(q)
-	if err != nil {
-		logrus.Error(err)
-		c.Error(g, err)
-		return
 	}
 
 	res, err := c.GetBaseInfo(resource, nil, ListKind)
