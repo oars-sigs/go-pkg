@@ -2,10 +2,15 @@ package crud
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
+	"sort"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 	"pkg.oars.vip/go-pkg/constant"
 	"pkg.oars.vip/go-pkg/idaas"
@@ -133,6 +138,7 @@ type BaseInfoController struct {
 type Option struct {
 	ResourceGroup   string
 	OperationLogSrv OperationLogService
+	Mgr             any
 }
 
 func NewCrud(b *base.BaseController, tx StoreTransaction, idaas *idaas.Client, opt *Option) *BaseInfoController {
@@ -786,4 +792,241 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 		l.ChangeCallback(m, UpdateKind)
 	}
 	c.OK(g, m)
+}
+
+func (c *BaseInfoController) Export(g *gin.Context) {
+	resource := g.Param("resource")
+
+	m, err := c.GetBaseInfo(resource, g, GetKind)
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	sheets := &ExportListOption{
+		Sheets: make(map[string]CommonModelExport),
+	}
+	if listexport, ok := m.(CommonModelExportList); ok {
+		sheets = listexport.ListExportORM(g)
+		fmt.Println(sheets)
+	} else {
+		export, ok := m.(CommonModelExport)
+		if !ok {
+			c.Error(g, perr.New("不支持导出"))
+			return
+		}
+		sheets.Sheets["Sheet1"] = export
+	}
+	xlsx := excelize.NewFile()
+	defer xlsx.Close()
+	isfirst := true
+	for sheetName, export := range sheets.Sheets {
+		xlsx.NewSheet(sheetName)
+		if isfirst && sheetName != "Sheet1" {
+			xlsx.DeleteSheet("Sheet1")
+			isfirst = false
+		}
+		db, data, opt, err := export.ExportORM(c.Tx.GetDB(), c, g)
+		if err != nil {
+			logrus.Error(err)
+			c.Error(g, err)
+			return
+		}
+		if sheets.Name == "" {
+			sheets.Name = opt.Name
+		}
+		if db != nil {
+			err = db.Find(&data).Error
+			if err != nil {
+				logrus.Error(err)
+				c.Error(g, err)
+				return
+			}
+		}
+		sliceValue := reflect.ValueOf(data)
+		var headers [][]HeaderItem
+		var allHeaders []HeaderItem
+		style, _ := xlsx.NewStyle(&excelize.Style{
+			Border: []excelize.Border{
+				{
+					Style: 1,
+					Type:  "left",
+					Color: "0000000",
+				},
+				{
+					Style: 1,
+					Type:  "right",
+					Color: "0000000",
+				},
+				{
+					Style: 1,
+					Type:  "top",
+					Color: "0000000",
+				},
+				{
+					Style: 1,
+					Type:  "bottom",
+					Color: "0000000",
+				},
+			},
+			Alignment: &excelize.Alignment{
+				Horizontal: "center",
+				Vertical:   "center",
+			},
+		})
+		type posCell struct {
+			v string
+			p int
+		}
+		mergeCell := make(map[int][]posCell)
+		for i := 0; i < sliceValue.Len(); i++ {
+			if len(opt.Headers) == 0 {
+				opt.Headers = make([]HeaderItem, 0)
+				GetExportHeaders(sliceValue.Index(i).Type(), &opt.Headers)
+				if len(opt.Extends) > 0 {
+					opt.Headers = append(opt.Headers, opt.Extends...)
+				}
+				sort.Slice(opt.Headers, func(i, j int) bool {
+					return opt.Headers[i].Order < opt.Headers[j].Order
+				})
+
+				if len(opt.Ignores) > 0 {
+					hs := make([]HeaderItem, 0)
+					for _, h := range opt.Headers {
+						ignore := false
+						for _, s := range opt.Ignores {
+							if s == h.Filed {
+								ignore = true
+								break
+							}
+						}
+						if !ignore {
+							hs = append(hs, h)
+						}
+					}
+					opt.Headers = hs
+				}
+			}
+			if len(headers) == 0 {
+				headers = GenHeaders(opt.Headers)
+			}
+			headerRow := len(headers)
+			if len(allHeaders) == 0 {
+				var vallHeaders []HeaderItem
+				for _, hs := range headers {
+					for _, h := range hs {
+						if h.W == 0 {
+							vallHeaders = append(vallHeaders, h)
+						}
+					}
+				}
+				allHeaders = vallHeaders
+				indexspan := make(map[int]bool)
+				allHeaders = make([]HeaderItem, len(vallHeaders))
+				for _, hs := range headers {
+					w := 0
+					for _, h := range hs {
+						w = GetNextIndex(indexspan, w)
+						if h.W == 0 {
+							allHeaders[w] = h
+							indexspan[w] = true
+							w++
+						} else {
+							w += h.W
+						}
+					}
+				}
+			}
+
+			for j, h := range allHeaders {
+				var data any
+				if v, ok := sliceValue.Index(i).Interface().(map[string]interface{}); ok {
+					data = v[h.Filed]
+				} else {
+					v := sliceValue.Index(i).FieldByName(h.Filed)
+					if !v.IsValid() {
+						continue
+					}
+					data = v.Interface()
+				}
+
+				if fn, ok := h.Fns["format"]; ok {
+					switch fn {
+					case "toDate":
+						data = time.UnixMilli(data.(int64)).Format("2006-01-02")
+					case "toDatetime":
+						data = time.UnixMilli(data.(int64)).Format("2006-01-02 15:04:05")
+					}
+				}
+				if h.AutoMerge {
+					if len(mergeCell[j]) == 0 {
+						mergeCell[j] = append(mergeCell[j], posCell{
+							p: i + headerRow,
+							v: fmt.Sprint(data),
+						})
+					} else if mergeCell[j][len(mergeCell[j])-1].v != fmt.Sprint(data) {
+						mergeCell[j] = append(mergeCell[j], posCell{
+							p: i + headerRow,
+							v: fmt.Sprint(data),
+						})
+					}
+				}
+				xlsx.SetCellValue(sheetName, GetEcelAxis(i+headerRow+1, j+1), data)
+				xlsx.SetCellStyle(sheetName, GetEcelAxis(i+headerRow+1, j+1), GetEcelAxis(i+headerRow+1, j+1), style)
+			}
+		}
+
+		//表头
+		indexspan := make(map[int]bool)
+		for i, row := range headers {
+			j := 0
+			cindexspan := make(map[int]bool)
+			for _, col := range row {
+				j = GetNextIndex(indexspan, j)
+				if col.D == 0 && col.L < len(headers) {
+					xlsx.MergeCell(sheetName, GetEcelAxis(i+1, j+1),
+						GetEcelAxis(i+1+(len(headers)-col.L), j+1))
+					cindexspan[j] = true
+					xlsx.SetCellStyle(sheetName, GetEcelAxis(i+1, j+1),
+						GetEcelAxis(i+1+(len(headers)-col.L), j+1), style)
+				}
+				xlsx.SetCellValue(sheetName, GetEcelAxis(i+1, j+1), col.Title)
+				if col.W > 0 {
+					xlsx.MergeCell(sheetName, GetEcelAxis(i+1, j+1), GetEcelAxis(i+1, j+col.W))
+					xlsx.SetCellStyle(sheetName, GetEcelAxis(i+1, j+1), GetEcelAxis(i+1, j+col.W), style)
+					j += col.W
+				} else {
+					xlsx.SetCellStyle(sheetName, GetEcelAxis(i+1, j+1), GetEcelAxis(i+1, j+1), style)
+					j++
+				}
+
+				if col.Width > 0 {
+					xlsx.SetColWidth(sheetName, GetColumnIndex(i+1),
+						GetColumnIndex(i+1), float64(col.Width))
+				}
+				for j, m := range mergeCell {
+					for i, p := range m {
+						if i == len(m)-1 {
+							if sliceValue.Len()+len(headers)-p.p > 2 {
+								xlsx.MergeCell(sheetName, GetEcelAxis(p.p+1, j+1), GetEcelAxis(sliceValue.Len()+len(headers), j+1))
+							}
+							continue
+						}
+						if m[i+1].p-p.p > 1 {
+							xlsx.MergeCell(sheetName, GetEcelAxis(p.p+1, j+1), GetEcelAxis(m[i+1].p, j+1))
+						}
+					}
+				}
+			}
+			for k, v := range cindexspan {
+				indexspan[k] = v
+			}
+		}
+	}
+
+	g.Writer.Header().Set("Content-Type", "application/octet-stream")
+	disposition := fmt.Sprintf("attachment; filename=\"%s_%s.xlsx\"", sheets.Name, time.Now().Format("20060102"))
+	g.Writer.Header().Set("Content-Disposition", disposition)
+	_ = xlsx.Write(g.Writer)
+
 }
