@@ -797,20 +797,15 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 func (c *BaseInfoController) Export(g *gin.Context) {
 	resource := g.Param("resource")
 
-	m, err := c.GetBaseInfo(resource, g, GetKind)
-	if err != nil {
-		logrus.Error(err)
-		c.Error(g, err)
-		return
-	}
+	svc := c.GetService(resource)
 	sheets := &ExportListOption{
 		Sheets: make(map[string]CommonModelExport),
 	}
-	if listexport, ok := m.(CommonModelExportList); ok {
+	if listexport, ok := svc.(CommonModelExportList); ok {
 		sheets = listexport.ListExportORM(g)
 		fmt.Println(sheets)
 	} else {
-		export, ok := m.(CommonModelExport)
+		export, ok := svc.(CommonModelExport)
 		if !ok {
 			c.Error(g, perr.New("不支持导出"))
 			return
