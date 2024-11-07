@@ -89,3 +89,21 @@ func (c *Client) VerifyCaptchas(b *VerifyCaptcha) (bool, error) {
 	}
 	return res.Data, err
 }
+
+type WxacodeResp struct {
+	*base.DataResponse
+	Data string `json:"data"`
+}
+
+func (c *Client) Wxacode(p interface{}) (string, error) {
+	var res WxacodeResp
+	uri := "/idaas/api/sys/wxacode"
+	err := req.ReqJSON(http.MethodPost, c.GetUrl(uri), p, &res, c.SetAuthHeader(nil))
+	if err != nil {
+		return "", err
+	}
+	if res.Error.Error() != nil {
+		return "", err
+	}
+	return res.Data, err
+}
