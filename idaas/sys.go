@@ -107,3 +107,21 @@ func (c *Client) Wxacode(p interface{}) (string, error) {
 	}
 	return res.Data, err
 }
+
+type LoginCodeResp struct {
+	*base.DataResponse
+	Data string `json:"data"`
+}
+
+func (c *Client) GetLoginCode(p *CodeSession) (string, error) {
+	var res LoginCodeResp
+	uri := "/idaas-app/getcode"
+	err := req.ReqJSON(http.MethodPost, c.GetUrl(uri), p, &res, c.SetAuthHeader(nil))
+	if err != nil {
+		return "", err
+	}
+	if res.Error.Error() != nil {
+		return "", err
+	}
+	return res.Data, err
+}

@@ -352,3 +352,11 @@ type MenuResource struct {
 	Children     []*MenuResource     `json:"children"`
 	Permissions  *ResourceNames      `json:"permissions"`
 }
+
+type CodeSession struct {
+	UserId   string `json:"userId"`
+	Username string `json:"username"`
+	Session  string `json:"session"`
+	AppId    string `json:"appId"`
+	Pool     string `json:"pool"`
+}
