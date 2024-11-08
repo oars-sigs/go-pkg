@@ -210,10 +210,6 @@ func (c *Client) Me(g *gin.Context) (*UserInfo, error) {
 	return c.User(uid, false)
 }
 
-type TokenClaims struct {
-	jwt.StandardClaims
-}
-
 func (c *Client) Auth(g *gin.Context) (*TokenInfo, error) {
 	tokenStr := g.GetHeader(constant.ProxyUserTokenHeader)
 	appId, _ := c.AppID(g)
@@ -249,4 +245,17 @@ func (c *Client) IsVisitor(g *gin.Context) (bool, error) {
 		return false, perr.ErrUnauthorized
 	}
 	return strings.HasPrefix(uid, constant.VisitorUidPrefix), nil
+}
+
+func (c *Client) ChangeUserToken(g *gin.Context, dstAppId string, expiration int64) (string, error) {
+	uo, err := ParseReq(g.Request, c.cfg.AppSecret)
+	if err != nil {
+		return "", err
+	}
+	dstSecret, ok := c.cfg.Apps[dstAppId]
+	if !ok {
+		return "", perr.New("应用不存在")
+	}
+	uo.AppId = dstAppId
+	return CreateTokenWithObj(uo, dstSecret, expiration), nil
 }
