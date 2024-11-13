@@ -137,3 +137,20 @@ func (c *Client) CurTasks(uid string, ids []string) (map[string]BusTask, error) 
 	}
 	return resp.Data, nil
 }
+
+type HandoverParam struct {
+	Src string `json:"src"`
+	Dst string `json:"dst"`
+}
+
+func (c *Client) Handover(p *HandoverParam) error {
+	var resp base.DataResponse
+	err := req.ReqJSON(http.MethodPost, c.getUrl("/oars-former/api/v1/admin/flow/handover"), p, &resp, nil)
+	if err != nil {
+		return err
+	}
+	if resp.Error.Error() != nil {
+		return resp.Error.Error()
+	}
+	return nil
+}
