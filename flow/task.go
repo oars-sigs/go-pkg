@@ -135,16 +135,36 @@ func (t Task) Loop(ctxAction *customAction) {
 
 		var cwg sync.WaitGroup
 		cwg.Add(len(ls))
+		isBreak := false
+		isContinue := false
 		conc := make(chan struct{}, n)
 		for _, item := range ls {
-			p := parseParams(params, ctxAction.vars.SetCtx(getLoopMap(item)))
 			conc <- struct{}{}
+			if isBreak {
+				cwg.Done()
+				continue
+			}
+			if isContinue {
+				cwg.Done()
+				isContinue = false
+				continue
+			}
+			p := parseParams(params, ctxAction.vars.SetCtx(getLoopMap(item)))
 			go func(p interface{}) {
 				defer func() {
 					cwg.Done()
 					<-conc
 				}()
 				res, err = ctxAction.runTask(action, conf, p)
+
+				if n == 1 && err == ErrLoopBreak {
+					isBreak = true
+					err = nil
+				}
+				if n == 1 && err == ErrLoopContinue {
+					isContinue = true
+					err = nil
+				}
 			}(p)
 		}
 		cwg.Wait()

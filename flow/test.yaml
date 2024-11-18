@@ -1,4 +1,7 @@
 values: 
+  ddd: 
+  - 1
+  - 2
   aa: "ck"
   c: 1
   # aaa:
@@ -22,12 +25,18 @@ values:
 #       output: $.values.res
 #     output: $.values.res
 tasks:
+  - tasks:
+    - print: aaaa
+    - print: $.ctx.item
+    - break: {}
+      when: values.c == 1
+    loop: $.values.ddd
   # - setface: $.values.aa
   #   output: $.values.ddd
   #   debug: true
   # - print: $.values.ddd
-  - print: dd
-    when: values.ss.a.aa[0] == 1
+  # - print: dd
+  #   when: values.ss.a.aa[0] == 1
   # - print: $.ctx.itemKey
   #   loop: $.values.ss
   # - tasks:

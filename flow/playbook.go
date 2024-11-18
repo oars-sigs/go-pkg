@@ -50,6 +50,8 @@ func Run(path string, valuePath ...string) error {
 	}
 	AddCustomActions("print", new(PrintAction))
 	AddCustomActions("setface", new(SetfaceAction))
+	AddCustomActions("break", new(LoopBreak))
+	AddCustomActions("continue", new(LoopContinue))
 	return p.Run(conf)
 }
 
