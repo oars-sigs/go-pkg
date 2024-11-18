@@ -596,7 +596,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 				Group:        c.resourceGroup,
 				Resource:     resource,
 				ResourceName: "*",
-				Action:       constant.SelectAction,
+				Action:       "*",
 				UserId:       c.GetUid(g),
 			})
 			if err != nil {
