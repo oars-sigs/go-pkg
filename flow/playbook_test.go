@@ -11,6 +11,7 @@ func TestPlaybook(t *testing.T) {
 	AddCustomActions("js", new(JsAction))
 	AddCustomActions("server", new(ServerAction))
 	AddCustomActions("cron", new(CronAction))
+	JsReq("Decimal", "./testdata/decimal.js")
 	err := Run("test.yaml")
 	if err != nil {
 		t.Fatal(err)

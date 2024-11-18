@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/dop251/goja"
+	"github.com/dop251/goja_nodejs/require"
 )
 
 var JsFunMap = map[string]map[string]interface{}{
@@ -23,6 +24,14 @@ func JSSet(n, k string, v interface{}) {
 	JsFunMap[n][k] = v
 }
 
+var registry = new(require.Registry)
+
+var jsReqMap = make(map[string]string)
+
+func JsReq(m, p string) {
+	jsReqMap[m] = p
+}
+
 type JsAction struct {
 	Script string      `yaml:"script"`
 	Input  interface{} `yaml:"args"`
@@ -32,6 +41,7 @@ type JsAction struct {
 func (a *JsAction) Do(conf *Config, params interface{}) (interface{}, error) {
 	args := params.(JsAction)
 	jsvm := goja.New()
+	req := registry.Enable(jsvm)
 	//fns :=make([]string,0)
 	var output interface{}
 	JSSet("sys", "args", args.Input)
@@ -46,6 +56,10 @@ func (a *JsAction) Do(conf *Config, params interface{}) (interface{}, error) {
 		conf.PTasks = append(conf.PTasks, fn)
 	})
 	for k, v := range JsFunMap {
+		jsvm.Set(k, v)
+	}
+	for k, v := range jsReqMap {
+		v, _ := req.Require(v)
 		jsvm.Set(k, v)
 	}
 	if args.File != "" {

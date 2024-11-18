@@ -1,4 +1,6 @@
 values: 
+  a: 1.1
+  b: 2.2
   ddd: 
   - 1
   - 2
@@ -25,12 +27,21 @@ values:
 #       output: $.values.res
 #     output: $.values.res
 tasks:
-  - tasks:
-    - print: aaaa
-    - print: $.ctx.item
-    - break: {}
-      when: values.c == 1
-    loop: $.values.ddd
+  - js:
+      script: |
+        var d = new Decimal(1.12345)
+        
+        console.log(d.toFixed(2))
+        var _ = require("./testdata/lodash.js");
+        console.log(_.endsWith('abc', 'c'))
+        
+      args: $.values
+  # - tasks:
+  #   - print: aaaa
+  #   - print: $.ctx.item
+  #   - break: {}
+  #     when: values.c == 1
+  #   loop: $.values.ddd
   # - setface: $.values.aa
   #   output: $.values.ddd
   #   debug: true
