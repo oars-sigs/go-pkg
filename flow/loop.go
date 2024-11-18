@@ -25,6 +25,14 @@ func Loop(loop interface{}, vars *Gvars) []LoopRes {
 			}
 		}
 
+		sliceValue := reflect.ValueOf(loop)
+		for i := 0; i < sliceValue.Len(); i++ {
+			res = append(res, LoopRes{
+				Item:    sliceValue.Index(i),
+				ItemKey: i,
+			})
+		}
+
 		return res
 	case reflect.Map:
 		res := make([]LoopRes, 0)
