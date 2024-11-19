@@ -29,7 +29,7 @@ func Loop(loop interface{}, vars *Gvars) []LoopRes {
 		sliceValue := reflect.ValueOf(loop)
 		for i := 0; i < sliceValue.Len(); i++ {
 			res = append(res, LoopRes{
-				Item:    sliceValue.Index(i),
+				Item:    sliceValue.Index(i).Interface(),
 				ItemKey: i,
 			})
 		}
