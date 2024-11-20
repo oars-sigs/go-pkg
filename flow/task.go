@@ -120,6 +120,7 @@ func (t Task) Loop(ctxAction *customAction) {
 	l := parseParams(s, ctxAction.vars)
 	ls := Loop(l, ctxAction.vars)
 	if len(ls) == 0 {
+		ctxAction.a = &customFuncAction{m: func(conf *Config, params interface{}) (interface{}, error) { return nil, nil }}
 		return
 	}
 
