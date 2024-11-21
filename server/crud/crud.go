@@ -128,11 +128,20 @@ type StoreTransaction interface {
 type BaseInfoController struct {
 	*base.BaseController
 	Tx            StoreTransaction
-	resources     map[string]ResourceModel
+	resources     map[string]resourceModelReg
 	services      map[string]any
 	idaas         *idaas.Client
 	resourceGroup string
 	opt           *Option
+}
+
+type resourceModelReg struct {
+	m      ResourceModel
+	option *ResourceModelOption
+}
+
+type ResourceModelOption struct {
+	Actions []string
 }
 
 type Option struct {
@@ -146,15 +155,21 @@ func NewCrud(b *base.BaseController, tx StoreTransaction, idaas *idaas.Client, o
 		BaseController: b,
 		Tx:             tx,
 		idaas:          idaas,
-		resources:      make(map[string]ResourceModel),
+		resources:      make(map[string]resourceModelReg),
 		services:       make(map[string]any),
 		resourceGroup:  opt.ResourceGroup,
 		opt:            opt,
 	}
 }
 
-func (c *BaseInfoController) RegResourceModel(m ResourceModel) {
-	c.resources[m.ResourceName()] = m
+func (c *BaseInfoController) RegResourceModel(m ResourceModel, opt ...*ResourceModelOption) {
+	r := resourceModelReg{
+		m: m,
+	}
+	if len(opt) > 0 {
+		r.option = opt[0]
+	}
+	c.resources[m.ResourceName()] = r
 }
 func (c *BaseInfoController) RegService(m ResourceModel, s any) {
 	c.services[m.ResourceName()] = s
@@ -165,22 +180,33 @@ func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind s
 	if !ok {
 		return nil, errors.New("资源不存在")
 	}
-	m := md.GetResourceModel()
+	if md.option != nil && len(md.option.Actions) > 0 {
+		exist := false
+		for _, act := range md.option.Actions {
+			if act == kind {
+				exist = true
+			}
+		}
+		if !exist {
+			return nil, perr.ErrForbidden
+		}
+	}
+	m := md.m.GetResourceModel()
 	if kind == ListKind {
-		m = md.ListResourceModel()
+		m = md.m.ListResourceModel()
 	}
 	if kind == UpdateKind {
-		if um, ok := md.(UpdateResourceModel); ok {
+		if um, ok := md.m.(UpdateResourceModel); ok {
 			m = um.UpdateResourceModel()
 		}
 	}
 	if kind == CreateKind {
-		if um, ok := md.(CreateResourceModel); ok {
+		if um, ok := md.m.(CreateResourceModel); ok {
 			m = um.CreateResourceModel()
 		}
 	}
 	if kind == DeleteKind {
-		if um, ok := md.(DeleteResourceModel); ok {
+		if um, ok := md.m.(DeleteResourceModel); ok {
 			m = um.DeleteResourceModel()
 		}
 	}
