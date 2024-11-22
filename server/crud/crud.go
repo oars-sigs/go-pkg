@@ -497,6 +497,27 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	db := c.Tx.GetDB()
+	if l, ok := c.GetService(resource).(CommonModelGet); ok {
+		db, res, err = l.GetORM(c.Tx.GetDB(), id, g)
+		if err != nil {
+			c.Error(g, err)
+			return
+		}
+	} else {
+		if v, ok := BuildGetORM(res, db); ok {
+			db = v
+			db = db.Where("m.id=?", id)
+		} else {
+			db = db.Where("id=?", id)
+		}
+	}
+	err = db.First(res).Error
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
 	if c.resourceGroup != "" {
 		if v, ok := res.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
@@ -536,28 +557,6 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 				return
 			}
 		}
-	}
-
-	db := c.Tx.GetDB()
-	if l, ok := c.GetService(resource).(CommonModelGet); ok {
-		db, res, err = l.GetORM(c.Tx.GetDB(), id, g)
-		if err != nil {
-			c.Error(g, err)
-			return
-		}
-	} else {
-		if v, ok := BuildGetORM(res, db); ok {
-			db = v
-			db = db.Where("m.id=?", id)
-		} else {
-			db = db.Where("id=?", id)
-		}
-	}
-	err = db.First(res).Error
-	if err != nil {
-		logrus.Error(err)
-		c.Error(g, err)
-		return
 	}
 	if c.opt.OperationLogSrv != nil {
 		log := &OperationLog{
