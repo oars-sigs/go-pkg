@@ -665,7 +665,11 @@ func (c *BaseInfoController) List(g *gin.Context) {
 			return
 		}
 	} else {
-		borm, ok := BuildListORM(res, db, &BuildORMOption{Search: g.Query("search"), SearchText: g.Query("searchText")})
+		borm, ok := BuildListORM(res, db, &BuildORMOption{
+			Search:       g.Query("search"),
+			SearchText:   g.Query("searchText"),
+			SeniorSearch: g.Query("seniorSearch"),
+		})
 		if ok {
 			db = borm
 		} else {

@@ -14,8 +14,9 @@ type ResourceTable interface {
 }
 
 type BuildORMOption struct {
-	Search     string
-	SearchText string
+	Search       string
+	SearchText   string
+	SeniorSearch string
 }
 
 func BuildListORM(data any, db *gorm.DB, opt *BuildORMOption) (*gorm.DB, bool) {
@@ -105,6 +106,12 @@ func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB,
 		}
 		db = db.Where(s+" LIKE ?", opt.SearchText)
 	}
+
+	//高级搜索
+	if opt.SeniorSearch != "" {
+		db = buildSeniorSearch(db, opt.SeniorSearch, res.json2f)
+	}
+
 	return db, res.Change
 }
 
@@ -112,13 +119,16 @@ type buildOrmRes struct {
 	IsJoin  bool
 	IsTable bool
 	Change  bool
+	json2f  map[string]string
 }
 
 func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds *[]string) (*gorm.DB, *buildOrmRes) {
 	ok := false
 	isJoin := false
 	isTable := false
+	json2f := make(map[string]string)
 	for i := 0; i < typeObj.NumField(); i++ {
+		json2db(typeObj.Field(i).Tag.Get("json"), typeObj.Field(i).Tag.Get("gorm"), json2f)
 		tags := getTags(typeObj.Field(i).Tag.Get("gsql"))
 		if tags.Table != "" {
 			ok = true
@@ -156,7 +166,7 @@ func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds 
 		}
 	}
 
-	return db, &buildOrmRes{IsJoin: isJoin, IsTable: isTable, Change: ok}
+	return db, &buildOrmRes{IsJoin: isJoin, IsTable: isTable, Change: ok, json2f: json2f}
 }
 
 type gSql struct {
@@ -202,4 +212,19 @@ func getTags(s string) *gSql {
 		}
 	}
 	return res
+}
+
+func json2db(j, o string, data map[string]string) {
+	if o == "" || j == "" {
+		return
+	}
+	ss := strings.Split(o, ";")
+	for _, s := range ss {
+		kk := strings.Split(s, ":")
+		if len(kk) > 1 {
+			if kk[0] == "column" {
+				data[j] = kk[1]
+			}
+		}
+	}
 }
