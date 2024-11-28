@@ -3,10 +3,27 @@ package crud
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"gorm.io/gorm"
 )
+
+func BuildSeniorSearch(data any, db *gorm.DB, text string) *gorm.DB {
+	typeObj := reflect.TypeOf(data).Elem()
+	json2f := make(map[string]string)
+	getdbTag(typeObj, json2f)
+	return buildSeniorSearch(db, text, json2f)
+}
+
+func getdbTag(typeObj reflect.Type, json2f map[string]string) {
+	for i := 0; i < typeObj.NumField(); i++ {
+		json2db(typeObj.Field(i).Tag.Get("json"), typeObj.Field(i).Tag.Get("gorm"), json2f)
+		if typeObj.Field(i).Type.Kind() == reflect.Struct {
+			getdbTag(typeObj.Field(i).Type, json2f)
+		}
+	}
+}
 
 type SeniorSearchRule struct {
 	Field    string `json:"field"`
@@ -34,7 +51,7 @@ func buildSeniorSearch(db *gorm.DB, text string, json2f map[string]string) *gorm
 		if f, ok := sfs[k]; ok {
 			db = db.Where(fmt.Sprintf("%s %s ?", f, getOp(rule.Operator)), getV(rule.Value, rule.Operator))
 		} else if len(db.Statement.Joins) > 0 {
-			db = db.Where(fmt.Sprintf("m.%s %s ?", k, getOp(rule.Operator)), getV(rule.Value, rule.Operator))
+			db = db.Where(fmt.Sprintf("%s.%s %s ?", db.Statement.Table, k, getOp(rule.Operator)), getV(rule.Value, rule.Operator))
 		} else {
 			db = db.Where(fmt.Sprintf("%s %s ?", k, getOp(rule.Operator)), getV(rule.Value, rule.Operator))
 		}
