@@ -10,7 +10,10 @@ func (e *Error) Error() string {
 	if e.detail == "" {
 		return e.msg
 	}
-	return e.detail
+	if e.msg == "" {
+		return e.detail
+	}
+	return e.msg + "," + e.detail
 }
 
 func (e *Error) Msg() string {

@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
+	"pkg.oars.vip/go-pkg/filebase"
 )
 
 type ImportOption struct {
@@ -100,4 +101,27 @@ func ParseImport(g *gin.Context, opt *ImportOption, res interface{}) error {
 	}
 	return nil
 
+}
+
+func GetImportTplHeader(fb *filebase.Client, fileId string, opt *ImportOption) ([]string, error) {
+	fs, err := fb.Get(fileId)
+	if err != nil {
+		return nil, err
+	}
+	defer fs.Close()
+	f, err := excelize.OpenReader(fs)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	rows, err := f.GetRows(opt.Sheet)
+	if err != nil {
+		return nil, err
+	}
+	for i, row := range rows {
+		if i == opt.OffsetRow {
+			return row, nil
+		}
+	}
+	return nil, err
 }
