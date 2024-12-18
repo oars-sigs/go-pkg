@@ -150,6 +150,20 @@ type Option struct {
 	Mgr             any
 }
 
+type Page struct {
+	base.Page
+	List interface{} `json:"rows"`
+}
+
+func GenPage(result interface{}, total, pageNum, pageSize int) Page {
+	var res Page
+	res.List = result
+	res.Total = total
+	res.PageNum = pageNum
+	res.PageSize = pageSize
+	return res
+}
+
 func NewCrud(b *base.BaseController, tx StoreTransaction, idaas *idaas.Client, opt *Option) *BaseInfoController {
 	return &BaseInfoController{
 		BaseController: b,
@@ -662,6 +676,10 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		db, res, err = l.ListORM(c.Tx.GetDB(), g, resources)
 		if err != nil {
 			c.Error(g, err)
+			return
+		}
+		if db == nil {
+			c.OK(g, res)
 			return
 		}
 	} else {
