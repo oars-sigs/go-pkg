@@ -984,12 +984,19 @@ func (c *BaseInfoController) Export(g *gin.Context) {
 				var data any
 				if v, ok := sliceValue.Index(i).Interface().(map[string]interface{}); ok {
 					data = v[h.Filed]
+					if reflect.TypeOf(data).Kind() == reflect.Ptr {
+						data = reflect.ValueOf(data).Elem().Interface()
+					}
 				} else {
 					v := sliceValue.Index(i).FieldByName(h.Filed)
 					if !v.IsValid() {
 						continue
 					}
-					data = v.Interface()
+					if v.Kind() == reflect.Ptr {
+						data = v.Elem().Interface()
+					} else {
+						data = v.Interface()
+					}
 				}
 
 				if fn, ok := h.Fns["format"]; ok {
