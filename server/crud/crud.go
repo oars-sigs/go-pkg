@@ -983,9 +983,10 @@ func (c *BaseInfoController) Export(g *gin.Context) {
 			for j, h := range allHeaders {
 				var data any
 				if v, ok := sliceValue.Index(i).Interface().(map[string]interface{}); ok {
-					data = v[h.Filed]
-					if reflect.TypeOf(data).Kind() == reflect.Ptr {
+					if data != nil && reflect.TypeOf(data).Kind() == reflect.Ptr {
 						data = reflect.ValueOf(data).Elem().Interface()
+					} else {
+						data = v[h.Filed]
 					}
 				} else {
 					v := sliceValue.Index(i).FieldByName(h.Filed)
