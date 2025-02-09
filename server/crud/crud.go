@@ -64,8 +64,14 @@ type CommonModelChangeCallback interface {
 type UpdateResourceModel interface {
 	UpdateResourceModel() interface{}
 }
+type UpdateResourceModelWithCtx interface {
+	UpdateResourceModel(g *gin.Context) interface{}
+}
 type CreateResourceModel interface {
 	CreateResourceModel() interface{}
+}
+type CreateResourceModelWithCtx interface {
+	CreateResourceModel(g *gin.Context) interface{}
 }
 type DeleteResourceModel interface {
 	DeleteResourceModel() interface{}
@@ -213,10 +219,16 @@ func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind s
 		if um, ok := md.m.(UpdateResourceModel); ok {
 			m = um.UpdateResourceModel()
 		}
+		if um, ok := md.m.(UpdateResourceModelWithCtx); ok {
+			m = um.UpdateResourceModel(g)
+		}
 	}
 	if kind == CreateKind {
 		if um, ok := md.m.(CreateResourceModel); ok {
 			m = um.CreateResourceModel()
+		}
+		if um, ok := md.m.(CreateResourceModelWithCtx); ok {
+			m = um.CreateResourceModel(g)
 		}
 	}
 	if kind == DeleteKind {
