@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -19,15 +18,19 @@ var DefaultHTTPClient = &http.Client{
 }
 
 func ReqJSON(method, urlStr string, body interface{}, respBody interface{}, headers map[string]string) error {
-	bodyData, err := json.Marshal(body)
-	if err != nil {
-		return err
+	var bodyData []byte
+	var err error
+	if body != nil {
+		bodyData, err = json.Marshal(body)
+		if err != nil {
+			return err
+		}
 	}
 	if headers == nil {
 		headers = make(map[string]string)
 	}
 	headers["Content-Type"] = "application/json"
-	data, err := ReqBtye(method, urlStr, bodyData, headers)
+	data, err := ReqByte(method, urlStr, bodyData, headers)
 	if err != nil {
 		return err
 	}
@@ -41,13 +44,13 @@ func ReqJSON(method, urlStr string, body interface{}, respBody interface{}, head
 	return nil
 }
 
-func ReqBtye(method, urlStr string, body []byte, headers map[string]string) ([]byte, error) {
+func ReqByte(method, urlStr string, body []byte, headers map[string]string) ([]byte, error) {
 	resp, err := Req(method, urlStr, bytes.NewReader(body), headers)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Close()
-	data, err := ioutil.ReadAll(resp)
+	data, err := io.ReadAll(resp)
 	if err != nil {
 		return nil, err
 	}
