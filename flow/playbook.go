@@ -59,6 +59,7 @@ type Playbook struct {
 	Tasks     []Task                 `yaml:"tasks"`
 	Values    map[string]interface{} `yaml:"values"`
 	Modules   []Module               `yaml:"modules"`
+	Import    string                 `yaml:"import"`
 	gvars     *Gvars
 	index     int
 	await     *gawait
@@ -75,6 +76,12 @@ func NewPlaybook(tasks []Task, vars *Gvars) *Playbook {
 
 func (p *Playbook) Run(conf *Config) error {
 	for {
+		if p.Import != "" {
+			err := Import(p.Import, p.gvars.Vars())
+			if err != nil {
+				return err
+			}
+		}
 		if p.index == len(p.Tasks) {
 			break
 		}
