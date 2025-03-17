@@ -76,10 +76,11 @@ func NewPlaybook(tasks []Task, vars *Gvars) *Playbook {
 
 func (p *Playbook) Run(conf *Config) error {
 	for _, im := range p.Imports {
-		err := Import(im, p.gvars.data.Values)
+		v, err := Import(im, p.gvars.data.Values)
 		if err != nil {
 			return err
 		}
+		p.gvars.data.Values = v
 	}
 	for {
 		if p.index == len(p.Tasks) {
