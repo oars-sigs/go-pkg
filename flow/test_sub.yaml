@@ -1,0 +1,9 @@
+values:
+  ss: 
+    a: 1
+    ch: 2
+  sub: dd
+tasks:
+- print: $.values.ss.a
+- print: $.values.ss.ch
+- print: $.values.sub

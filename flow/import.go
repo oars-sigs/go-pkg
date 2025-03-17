@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -20,9 +21,10 @@ func Import(path string, value map[string]any) error {
 		Next:    p.Next,
 		Workdir: ".",
 	}
-	for k, v := range value {
-		p.Values[k] = v
-	}
+	fmt.Println(value)
+	fmt.Println(p.Values)
+	p.Values = MergeValues(p.Values, value)
+	fmt.Println(p.Values)
 	vars := &Vars{
 		Values: p.Values,
 		Ctx:    make(map[string]interface{}),

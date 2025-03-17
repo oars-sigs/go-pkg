@@ -27,9 +27,10 @@ values:
 #         "y":  $.values.bb
 #       output: $.values.res
 #     output: $.values.res
+imports:
+- test_sub.yaml
 tasks:
   - print: a
-    loop: $.values.arr
   # - js:
   #     script: |
   #       var d = new Decimal(0.3)
