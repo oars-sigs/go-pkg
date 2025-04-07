@@ -538,11 +538,13 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 			db = db.Where("id=?", id)
 		}
 	}
-	err = db.First(res).Error
-	if err != nil {
-		logrus.Error(err)
-		c.Error(g, err)
-		return
+	if db != nil {
+		err = db.First(res).Error
+		if err != nil {
+			logrus.Error(err)
+			c.Error(g, err)
+			return
+		}
 	}
 	if c.resourceGroup != "" {
 		if v, ok := res.(GetResourceName); ok {
