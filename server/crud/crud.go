@@ -701,6 +701,8 @@ func (c *BaseInfoController) List(g *gin.Context) {
 			Search:       g.Query("search"),
 			SearchText:   g.Query("searchText"),
 			SeniorSearch: g.Query("seniorSearch"),
+			SortField:    g.Query("sortField"),
+			Order:        g.Query("order"),
 		})
 		if ok {
 			db = borm

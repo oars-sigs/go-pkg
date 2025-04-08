@@ -49,19 +49,22 @@ func buildSeniorSearch(db *gorm.DB, text string, json2f map[string]string) *gorm
 			continue
 		}
 		if f, ok := sfs[k]; ok {
-			db = db.Where(fmt.Sprintf("%s %s ?", f, getOp(rule.Operator)), getV(rule.Value, rule.Operator))
+			db = db.Where(fmt.Sprintf("%s %s ?", f, getOp(rule.Value, rule.Operator)), getV(rule.Value, rule.Operator))
 		} else if len(db.Statement.Joins) > 0 {
-			db = db.Where(fmt.Sprintf("%s.%s %s ?", db.Statement.Table, k, getOp(rule.Operator)), getV(rule.Value, rule.Operator))
+			db = db.Where(fmt.Sprintf("%s.%s %s ?", db.Statement.Table, k, getOp(rule.Value, rule.Operator)), getV(rule.Value, rule.Operator))
 		} else {
-			db = db.Where(fmt.Sprintf("%s %s ?", k, getOp(rule.Operator)), getV(rule.Value, rule.Operator))
+			db = db.Where(fmt.Sprintf("%s %s ?", k, getOp(rule.Value, rule.Operator)), getV(rule.Value, rule.Operator))
 		}
 	}
 	return db
 }
 
-func getOp(s string) string {
-	switch s {
+func getOp(s any, op string) string {
+	switch op {
 	case "==":
+		if reflect.TypeOf(s).Kind() == reflect.Slice {
+			return "in"
+		}
 		return "="
 	case "contains":
 		return "LIKE"

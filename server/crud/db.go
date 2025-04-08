@@ -17,6 +17,8 @@ type BuildORMOption struct {
 	Search       string
 	SearchText   string
 	SeniorSearch string
+	SortField    string
+	Order        string
 }
 
 func BuildListORM(data any, db *gorm.DB, opt *BuildORMOption) (*gorm.DB, bool) {
@@ -110,6 +112,13 @@ func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB,
 	//高级搜索
 	if opt.SeniorSearch != "" {
 		db = buildSeniorSearch(db, opt.SeniorSearch, res.json2f)
+	}
+	if opt.SortField != "" {
+		if opt.Order == "2" {
+			db = db.Order(res.json2f[opt.SortField] + " desc")
+		} else {
+			db = db.Order(res.json2f[opt.SortField])
+		}
 	}
 
 	return db, res.Change
