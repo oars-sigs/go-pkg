@@ -81,6 +81,10 @@ type GetResourceName interface {
 	GetResourceName() (string, string)
 }
 
+type DisablePermission interface {
+	DisablePermission() bool
+}
+
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
 	Created    int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
@@ -252,6 +256,17 @@ func (c *BaseInfoController) GetService(resource string) any {
 	return nil
 }
 
+func (c *BaseInfoController) EnPermission(s any) bool {
+	if c.resourceGroup == "" {
+		return false
+	}
+	dis, ok := s.(DisablePermission)
+	if ok {
+		return !dis.DisablePermission()
+	}
+	return true
+}
+
 func (c *BaseInfoController) Create(g *gin.Context) {
 	resource := g.Param("resource")
 	m, err := c.GetBaseInfo(resource, g, CreateKind)
@@ -260,7 +275,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if c.resourceGroup != "" {
+	if c.EnPermission(m) {
 		if v, ok := m.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
 			if prResource != resource {
@@ -344,7 +359,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if c.resourceGroup != "" {
+	if c.EnPermission(m) {
 		if v, ok := m.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
 			if prResource != resource {
@@ -443,7 +458,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if c.resourceGroup != "" {
+	if c.EnPermission(m) {
 		q, _ := c.getRes(resource, id)
 		if v, ok := q.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
@@ -546,7 +561,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 			return
 		}
 	}
-	if c.resourceGroup != "" {
+	if c.EnPermission(res) {
 		if v, ok := res.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
 			if prResource != resource {
@@ -623,7 +638,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		All: true,
 	}
 
-	if c.resourceGroup != "" {
+	if c.EnPermission(q) {
 		if v, ok := q.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
 			if prResource != resource {
@@ -786,7 +801,7 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 				c.Error(g, err)
 				return
 			}
-			if c.resourceGroup != "" {
+			if c.EnPermission(res) {
 				ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 					Group:        c.resourceGroup,
 					Resource:     resource,
@@ -825,7 +840,7 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if c.resourceGroup != "" {
+	if c.EnPermission(m) {
 		ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 			Group:        c.resourceGroup,
 			Resource:     resource,
