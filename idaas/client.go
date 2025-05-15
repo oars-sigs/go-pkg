@@ -261,7 +261,7 @@ func (c *Client) ChangeUserToken(g *gin.Context, dstAppId string, expiration int
 }
 
 func (c *Client) GetOrgTree() ([]Department, error) {
-	urlstr := "/idaas/api/orgtree?getGroupUser=true&getDeptUser=true&getDept=true"
+	urlstr := c.GetUrl("/idaas/api/orgtree?getGroupUser=true&getDeptUser=true&getDept=true")
 	var user DeptsResp
 	err := req.ReqJSON("GET", urlstr, nil, &user, c.SetAuthHeader(nil))
 	if err != nil {
