@@ -259,3 +259,16 @@ func (c *Client) ChangeUserToken(g *gin.Context, dstAppId string, expiration int
 	uo.AppId = dstAppId
 	return CreateTokenWithObj(uo, dstSecret, expiration), nil
 }
+
+func (c *Client) GetOrgTree() ([]Department, error) {
+	urlstr := "/idaas/api/orgtree?getGroupUser=true&getDeptUser=true&getDept=true"
+	var user DeptsResp
+	err := req.ReqJSON("GET", urlstr, nil, &user, c.SetAuthHeader(nil))
+	if err != nil {
+		return nil, err
+	}
+	if user.Error.Error() != nil {
+		return nil, err
+	}
+	return user.Data, err
+}

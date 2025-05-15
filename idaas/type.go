@@ -132,6 +132,8 @@ type Department struct {
 	Path     string        `json:"path"`
 	NamePath string        `json:"namePath"`
 	Kind     string        `json:"kind"`
+	Users    []*UserInfo   `json:"users" gorm:"-"`
+	Groups   []*Group      `json:"groups" gorm:"-"`
 }
 
 // ThirdUser 第三方用户
