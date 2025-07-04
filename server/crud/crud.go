@@ -538,6 +538,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	vres := res
 	db := c.Tx.GetDB()
 	if l, ok := c.GetService(resource).(CommonModelGet); ok {
 		db, res, err = l.GetORM(c.Tx.GetDB(), id, g)
@@ -561,7 +562,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 			return
 		}
 	}
-	if c.EnPermission(res) {
+	if c.EnPermission(vres) {
 		if v, ok := res.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
 			if prResource != resource {
