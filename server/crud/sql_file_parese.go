@@ -91,8 +91,9 @@ func parsePrefix(line, prefix string) (name string, driver string) {
 
 var QuerySqlFiles embed.FS
 
-func Init(sqlFiles embed.FS) {
+func InitQuerySql(sqlFiles embed.FS) error {
 	QuerySqlFiles = sqlFiles
+	return readQuerySql()
 }
 
 var querySqls sync.Map
