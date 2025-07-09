@@ -1144,7 +1144,7 @@ func (c *BaseInfoController) Import(g *gin.Context) {
 	offsetRow, _ := strconv.Atoi(g.PostForm("offsetRow"))
 
 	hs := []ImportColumn{}
-	GetImportHeaders(reflect.TypeOf(m).Elem(), &hs)
+	GetImportHeaders(reflect.TypeOf(m).Elem().Elem(), &hs)
 	err = ParseImport(g, &ImportOption{Column: hs, Sheet: sheet, OffsetRow: offsetRow}, &m)
 	if err != nil {
 		c.Error(g, err)
