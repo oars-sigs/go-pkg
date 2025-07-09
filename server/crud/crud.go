@@ -25,6 +25,7 @@ const (
 	UpdateKind = "update"
 	GetKind    = "get"
 	DeleteKind = "delete"
+	ImportKind = "import"
 )
 
 type ResourceModel interface {
@@ -76,6 +77,10 @@ type CreateResourceModelWithCtx interface {
 }
 type DeleteResourceModel interface {
 	DeleteResourceModel() interface{}
+}
+
+type ImportResourceModel interface {
+	ImportResourceModel() interface{}
 }
 
 type GetResourceName interface {
@@ -239,6 +244,11 @@ func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind s
 	if kind == DeleteKind {
 		if um, ok := md.m.(DeleteResourceModel); ok {
 			m = um.DeleteResourceModel()
+		}
+	}
+	if kind == ImportKind {
+		if um, ok := md.m.(ImportResourceModel); ok {
+			m = um.ImportResourceModel()
 		}
 	}
 	if g != nil {
@@ -1125,7 +1135,7 @@ func (c *BaseInfoController) Export(g *gin.Context) {
 
 func (c *BaseInfoController) Import(g *gin.Context) {
 	resource := g.Param("resource")
-	m, err := c.GetBaseInfo(resource, nil, CreateKind)
+	m, err := c.GetBaseInfo(resource, nil, ImportKind)
 	if err != nil {
 		c.Error(g, err)
 		return
@@ -1134,29 +1144,24 @@ func (c *BaseInfoController) Import(g *gin.Context) {
 	offsetRow, _ := strconv.Atoi(g.PostForm("offsetRow"))
 
 	hs := []ImportColumn{}
-	GetImportHeaders(reflect.TypeOf(m), &hs)
-
-	data := NewEmptySlice(m)
-	err = ParseImport(g, &ImportOption{Column: hs, Sheet: sheet, OffsetRow: offsetRow}, data)
+	GetImportHeaders(reflect.TypeOf(m).Elem(), &hs)
+	err = ParseImport(g, &ImportOption{Column: hs, Sheet: sheet, OffsetRow: offsetRow}, &m)
 	if err != nil {
 		c.Error(g, err)
 		return
 	}
-	for _, d := range data {
-		if v, ok := d.(CommonModelInf); ok {
+
+	d := reflect.ValueOf(m)
+	for i := 0; i < d.Len(); i++ {
+		if v, ok := d.Index(i).Interface().(CommonModelInf); ok {
 			v.GenID()
 		}
 	}
 	db := c.Tx.GetDB()
-	err = db.CreateInBatches(data, 100).Error
+	err = db.CreateInBatches(m, 100).Error
 	if err != nil {
 		c.Error(g, err)
 		return
 	}
 	c.OK(g, nil)
-}
-
-func NewEmptySlice[T any](v T) []T {
-	s := make([]T, 0)
-	return s
 }

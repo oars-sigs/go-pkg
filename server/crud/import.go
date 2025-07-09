@@ -1,7 +1,6 @@
 package crud
 
 import (
-	"encoding/json"
 	"os"
 	"reflect"
 	"strconv"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/mitchellh/mapstructure"
 	"github.com/xuri/excelize/v2"
 	"pkg.oars.vip/go-pkg/filebase"
 )
@@ -96,14 +96,7 @@ func ParseImport(g *gin.Context, opt *ImportOption, res interface{}) error {
 		}
 		data = append(data, item)
 	}
-	d, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(d, &res)
-	if err != nil {
-		return err
-	}
+	mapstructure.Decode(data, res)
 	return nil
 
 }
