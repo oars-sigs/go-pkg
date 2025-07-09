@@ -12,4 +12,5 @@ func AddBaseRouter(r *gin.RouterGroup, crudc *BaseInfoController) {
 	r.PUT("/:resource/:id/:action", crudc.Update)
 	r.DELETE("/:resource/:id", crudc.Delete)
 	r.GET("/:resource/export", crudc.Export)
+	r.POST("/:resource/import", crudc.Import)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -1120,4 +1121,42 @@ func (c *BaseInfoController) Export(g *gin.Context) {
 	g.Writer.Header().Set("Content-Disposition", disposition)
 	_ = xlsx.Write(g.Writer)
 
+}
+
+func (c *BaseInfoController) Import(g *gin.Context) {
+	resource := g.Param("resource")
+	m, err := c.GetBaseInfo(resource, nil, CreateKind)
+	if err != nil {
+		c.Error(g, err)
+		return
+	}
+	sheet := g.PostForm("sheet")
+	offsetRow, _ := strconv.Atoi(g.PostForm("offsetRow"))
+
+	hs := []ImportColumn{}
+	GetImportHeaders(reflect.TypeOf(m), &hs)
+
+	data := NewEmptySlice(m)
+	err = ParseImport(g, &ImportOption{Column: hs, Sheet: sheet, OffsetRow: offsetRow}, data)
+	if err != nil {
+		c.Error(g, err)
+		return
+	}
+	for _, d := range data {
+		if v, ok := d.(CommonModelInf); ok {
+			v.GenID()
+		}
+	}
+	db := c.Tx.GetDB()
+	err = db.CreateInBatches(data, 100).Error
+	if err != nil {
+		c.Error(g, err)
+		return
+	}
+	c.OK(g, nil)
+}
+
+func NewEmptySlice[T any](v T) []T {
+	s := make([]T, 0)
+	return s
 }

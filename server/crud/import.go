@@ -3,7 +3,9 @@ package crud
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -50,6 +52,9 @@ func ParseImport(g *gin.Context, opt *ImportOption, res interface{}) error {
 	f, err := excelize.OpenFile(path)
 	if err != nil {
 		return err
+	}
+	if opt.Sheet == "" {
+		opt.Sheet = f.GetSheetName(0)
 	}
 	defer f.Close()
 	rows, err := f.GetRows(opt.Sheet)
@@ -124,4 +129,39 @@ func GetImportTplHeader(fb *filebase.Client, fileId string, opt *ImportOption) (
 		}
 	}
 	return nil, err
+}
+
+func GetImportHeaders(v reflect.Type, hs *[]ImportColumn) {
+	for n := 0; n < v.NumField(); n++ {
+		f := v.Field(n)
+		if f.Type.Kind() == reflect.Struct {
+			GetImportHeaders(f.Type, hs)
+		}
+		importTag := f.Tag.Get("import")
+		if importTag == "" {
+			continue
+		}
+		jsonTag := f.Tag.Get("json")
+		if jsonTag == "" {
+			continue
+		}
+		items := strings.Split(importTag, ";")
+		h := ImportColumn{}
+		fns := make(map[string]string)
+		for _, item := range items {
+			keys := strings.Split(item, ":")
+			if len(keys) > 1 {
+				fns[keys[0]] = keys[1]
+				continue
+			}
+			h = ImportColumn{Label: item, Prop: jsonTag}
+		}
+		for k, fn := range fns {
+			if k == "type" {
+				h.Type = fn
+			}
+		}
+		*hs = append(*hs, h)
+
+	}
 }
