@@ -26,6 +26,8 @@ const (
 	GetKind    = "get"
 	DeleteKind = "delete"
 	ImportKind = "import"
+
+	MsgCtx = "msgCtx"
 )
 
 type ResourceModel interface {
@@ -358,7 +360,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		c.genOperationLog(log, nil, m)
 	}
 
-	c.OK(g, m)
+	c.OK(g, m, g.GetString(MsgCtx))
 }
 
 func (c *BaseInfoController) Update(g *gin.Context) {
@@ -445,7 +447,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		log.GenID()
 		c.genOperationLog(log, oldRes, m)
 	}
-	c.OK(g, m)
+	c.OK(g, m, g.GetString(MsgCtx))
 }
 
 func (c *BaseInfoController) getRes(resource, id string) (any, error) {
@@ -537,7 +539,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		log.GenID()
 		c.genOperationLog(log, nil, m)
 	}
-	c.OK(g, nil)
+	c.OK(g, nil, g.GetString(MsgCtx))
 }
 
 func (c *BaseInfoController) Get(g *gin.Context) {
@@ -629,7 +631,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 	if l, ok := c.GetService(resource).(CommonModelGetGen); ok {
 		res = l.GetGen(res)
 	}
-	c.OK(g, res)
+	c.OK(g, res, g.GetString(MsgCtx))
 }
 
 func (c *BaseInfoController) List(g *gin.Context) {
@@ -784,7 +786,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		return
 	}
 
-	c.OK(g, res)
+	c.OK(g, res, g.GetString(MsgCtx))
 }
 
 func (c *BaseInfoController) Put(g *gin.Context) {
@@ -881,7 +883,7 @@ func (c *BaseInfoController) Put(g *gin.Context) {
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
 		l.ChangeCallback(m, UpdateKind)
 	}
-	c.OK(g, m)
+	c.OK(g, m, g.GetString(MsgCtx))
 }
 
 func (c *BaseInfoController) Export(g *gin.Context) {
