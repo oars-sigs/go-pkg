@@ -1,8 +1,9 @@
 package crud
 
 import (
+	"encoding/json"
+
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"pkg.oars.vip/go-pkg/former"
@@ -27,7 +28,7 @@ func (*ResourceFlowInfo) TableName() string {
 
 type FormerFlowData struct {
 	Data        map[string]any      `json:"data"`
-	Update      any                 `json:"update"`
+	Update      json.RawMessage     `json:"update"`
 	ActionUsers []former.ActionUser `json:"actionUsers"`
 }
 
@@ -52,15 +53,16 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 	if flowData.Data == nil {
 		flowData.Data = map[string]any{}
 	}
-	m, err := c.GetBaseInfo(resource, g, GetKind)
+	m, err := c.GetBaseInfo(resource, nil, UpdateKind)
 	if err != nil {
 		logrus.Error(err)
 		c.Error(g, err)
 		return
 	}
 	if flowData.Update != nil {
-		err = mapstructure.Decode(flowData.Update, m)
+		err = json.Unmarshal(flowData.Update, m)
 		if err != nil {
+			logrus.Error(err)
 			c.Error(g, err)
 			return
 		}
@@ -70,7 +72,7 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 	uid := c.GetUid(g)
 	db := c.Tx.GetDB()
 	var res any
-	db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx *gorm.DB) error {
 		res, err = CreateFormer(tx, c.opt.Former, id, uid, resource, modelMark, flowData.Data)
 		if err != nil {
 			return err
@@ -83,6 +85,11 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 		}
 		return nil
 	})
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
 
 	c.OK(g, res)
 }
