@@ -14,6 +14,7 @@ import (
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 	"pkg.oars.vip/go-pkg/constant"
+	"pkg.oars.vip/go-pkg/former"
 	"pkg.oars.vip/go-pkg/idaas"
 	"pkg.oars.vip/go-pkg/perr"
 	"pkg.oars.vip/go-pkg/server/base"
@@ -93,6 +94,10 @@ type DisablePermission interface {
 	DisablePermission() bool
 }
 
+type FlowHookSvc interface {
+	FlowHook(h *former.Hook) error
+}
+
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
 	Created    int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
@@ -148,6 +153,7 @@ type BaseInfoController struct {
 	Tx            StoreTransaction
 	resources     map[string]resourceModelReg
 	services      map[string]any
+	formerHooks   map[string]FlowHookSvc
 	idaas         *idaas.Client
 	resourceGroup string
 	opt           *Option
@@ -166,6 +172,7 @@ type Option struct {
 	ResourceGroup   string
 	OperationLogSrv OperationLogService
 	Mgr             any
+	Former          *former.Client
 }
 
 type Page struct {
@@ -183,12 +190,19 @@ func GenPage(result interface{}, total, pageNum, pageSize int) Page {
 }
 
 func NewCrud(b *base.BaseController, tx StoreTransaction, idaas *idaas.Client, opt *Option) *BaseInfoController {
+	if opt == nil {
+		opt = &Option{}
+	}
+	if opt.Former != nil {
+		tx.GetDB().Set("gorm:table_options", "COMMENT='资源流程关联表'").AutoMigrate(&ResourceFlowInfo{})
+	}
 	return &BaseInfoController{
 		BaseController: b,
 		Tx:             tx,
 		idaas:          idaas,
 		resources:      make(map[string]resourceModelReg),
 		services:       make(map[string]any),
+		formerHooks:    make(map[string]FlowHookSvc),
 		resourceGroup:  opt.ResourceGroup,
 		opt:            opt,
 	}
@@ -205,6 +219,10 @@ func (c *BaseInfoController) RegResourceModel(m ResourceModel, opt ...*ResourceM
 }
 func (c *BaseInfoController) RegService(m ResourceModel, s any) {
 	c.services[m.ResourceName()] = s
+}
+
+func (c *BaseInfoController) RegFormerHook(mark string, s FlowHookSvc) {
+	c.formerHooks[mark] = s
 }
 
 func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind string) (interface{}, error) {
