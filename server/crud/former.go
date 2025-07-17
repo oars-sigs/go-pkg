@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"pkg.oars.vip/go-pkg/former"
 	"pkg.oars.vip/go-pkg/perr"
@@ -14,11 +15,12 @@ import (
 type ResourceFlowInfo struct {
 	CommonModel
 
-	FromId   string `json:"fromId" gorm:"column:from_id;size:100;comment:资源ID"`
-	FromType string `json:"fromType" gorm:"column:from_type;size:100;comment:资源类型"`
-	Remark   string `json:"remark" gorm:"column:remark;size:200;comment:流程模型Remark"`
-	FlowId   string `json:"flowId" gorm:"column:flow_id;size:100;comment:关联的流程ID"`
-	Model    string `json:"model" gorm:"column:model;size:100;comment:关联的流程Model"`
+	FromId       string         `json:"fromId" gorm:"column:from_id;size:100;comment:资源ID"`
+	FromType     string         `json:"fromType" gorm:"column:from_type;size:100;comment:资源类型"`
+	Remark       string         `json:"remark" gorm:"column:remark;size:200;comment:流程模型Remark"`
+	FlowId       string         `json:"flowId" gorm:"column:flow_id;size:100;comment:关联的流程ID"`
+	Model        string         `json:"model" gorm:"column:model;size:100;comment:关联的流程Model"`
+	CompleteData datatypes.JSON `json:"completeData" gorm:"column:complete_data;type:json;comment:流程模型数据"`
 }
 
 // TableName ResourceFlowInfo's table name
@@ -27,9 +29,10 @@ func (*ResourceFlowInfo) TableName() string {
 }
 
 type FormerFlowData struct {
-	Data        map[string]any      `json:"data"`
-	Update      json.RawMessage     `json:"update"`
-	ActionUsers []former.ActionUser `json:"actionUsers"`
+	Data         map[string]any      `json:"data"`
+	ResourceData json.RawMessage     `json:"resourceData"`
+	CompleteData datatypes.JSON      `json:"completeData"`
+	ActionUsers  []former.ActionUser `json:"actionUsers"`
 }
 
 func (c *BaseInfoController) CreateFormer(g *gin.Context) {
@@ -53,14 +56,23 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 	if flowData.Data == nil {
 		flowData.Data = map[string]any{}
 	}
-	m, err := c.GetBaseInfo(resource, nil, UpdateKind)
+	isCreate := id == ""
+	actKind := UpdateKind
+	if isCreate {
+		actKind = CreateKind
+	}
+	m, err := c.GetBaseInfo(resource, nil, actKind)
 	if err != nil {
 		logrus.Error(err)
 		c.Error(g, err)
 		return
 	}
-	if flowData.Update != nil {
-		err = json.Unmarshal(flowData.Update, m)
+	if isCreate {
+		m.(CommonModelInf).GenID()
+		id = m.(CommonModelInf).GetId()
+	}
+	if flowData.ResourceData != nil {
+		err = json.Unmarshal(flowData.ResourceData, m)
 		if err != nil {
 			logrus.Error(err)
 			c.Error(g, err)
@@ -73,14 +85,21 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 	db := c.Tx.GetDB()
 	var res any
 	err = db.Transaction(func(tx *gorm.DB) error {
-		res, err = CreateFormer(tx, c.opt.Former, id, uid, resource, modelMark, flowData.Data)
+		res, err = CreateFormer(tx, c.opt.Former, id, uid, resource, modelMark, flowData.Data, flowData.CompleteData)
 		if err != nil {
 			return err
 		}
-		if flowData.Update != nil {
-			err = tx.Model(m).Where("id = ?", id).Updates(m).Error
-			if err != nil {
-				return err
+		if flowData.ResourceData != nil {
+			if isCreate {
+				err = tx.Create(m).Error
+				if err != nil {
+					return err
+				}
+			} else {
+				err = tx.Model(m).Where("id = ?", id).Updates(m).Error
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil
@@ -94,7 +113,7 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 	c.OK(g, res)
 }
 
-func CreateFormer(db *gorm.DB, formercli *former.Client, id, uid, resource, modelMark string, flowData map[string]any) (*ResourceFlowInfo, error) {
+func CreateFormer(db *gorm.DB, formercli *former.Client, id, uid, resource, modelMark string, flowData map[string]any, completeData datatypes.JSON) (*ResourceFlowInfo, error) {
 	m, err := formercli.GetModel(uid, &former.BusData{
 		ModelMark:  modelMark,
 		Data:       flowData,
@@ -115,11 +134,12 @@ func CreateFormer(db *gorm.DB, formercli *former.Client, id, uid, resource, mode
 		return nil, err
 	}
 	flowInfo := &ResourceFlowInfo{
-		FromId:   id,
-		FromType: resource,
-		FlowId:   res.ID,
-		Model:    modelMark,
-		Remark:   m.Name,
+		FromId:       id,
+		FromType:     resource,
+		FlowId:       res.ID,
+		Model:        modelMark,
+		Remark:       m.Name,
+		CompleteData: completeData,
 	}
 	flowInfo.CreatedBy = uid
 	flowInfo.GenID()
@@ -134,5 +154,27 @@ func (c *BaseInfoController) FlowHook(h *former.Hook) error {
 	if hook, ok := c.formerHooks[h.Model.Mark]; ok {
 		return hook.FlowHook(h)
 	}
+	db := c.Tx.GetDB()
+	var flowInfo ResourceFlowInfo
+	err := db.Find(&flowInfo, &ResourceFlowInfo{FlowId: h.Data.ID}).Error
+	if err != nil {
+		return err
+	}
+
+	if flowInfo.CompleteData != nil {
+		m, err := c.GetBaseInfo(flowInfo.FromType, nil, UpdateKind)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(flowInfo.CompleteData, m)
+		if err != nil {
+			return err
+		}
+		err = db.Model(m).Where("id = ?", flowInfo.FromId).Updates(m).Error
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
