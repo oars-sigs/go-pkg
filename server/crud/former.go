@@ -2,6 +2,7 @@ package crud
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -154,6 +155,9 @@ func (c *BaseInfoController) FlowHook(h *former.Hook) error {
 	if hook, ok := c.formerHooks[h.Model.Mark]; ok {
 		return hook.FlowHook(h)
 	}
+	if h.Event != "status" {
+		return nil
+	}
 	db := c.Tx.GetDB()
 	var flowInfo ResourceFlowInfo
 	err := db.Find(&flowInfo, &ResourceFlowInfo{FlowId: h.Data.ID}).Error
@@ -162,18 +166,26 @@ func (c *BaseInfoController) FlowHook(h *former.Hook) error {
 	}
 
 	if flowInfo.CompleteData != nil {
-		m, err := c.GetBaseInfo(flowInfo.FromType, nil, UpdateKind)
+		var d map[string]json.RawMessage
+		err = json.Unmarshal(flowInfo.CompleteData, &d)
 		if err != nil {
 			return err
 		}
-		err = json.Unmarshal(flowInfo.CompleteData, m)
-		if err != nil {
-			return err
+		if v, ok := d[strconv.Itoa(h.Status)]; ok {
+			m, err := c.GetBaseInfo(flowInfo.FromType, nil, UpdateKind)
+			if err != nil {
+				return err
+			}
+			err = json.Unmarshal(v, m)
+			if err != nil {
+				return err
+			}
+			err = db.Model(m).Where("id = ?", flowInfo.FromId).Updates(m).Error
+			if err != nil {
+				return err
+			}
 		}
-		err = db.Model(m).Where("id = ?", flowInfo.FromId).Updates(m).Error
-		if err != nil {
-			return err
-		}
+
 	}
 
 	return nil
