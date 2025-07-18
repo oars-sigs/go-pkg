@@ -118,7 +118,7 @@ func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB,
 		if opt.Order == "2" {
 			db = db.Order(res.json2f[opt.SortField] + " desc")
 		} else {
-			db = db.Order(res.json2f[opt.SortField])
+			db = db.Order(res.json2f[opt.SortField] + " asc")
 		}
 	}
 
