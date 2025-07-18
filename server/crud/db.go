@@ -72,8 +72,9 @@ func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB,
 	}
 	selectFileds := make([]string, 0)
 	searchFileds := make([]string, 0)
+	json2f := make(map[string]string)
 	var res *buildOrmRes
-	db, res = buildORMItem(typeObj, db, &selectFileds, &searchFileds)
+	db, res = buildORMItem(typeObj, db, &selectFileds, &searchFileds, json2f)
 	//如果有关联表且没定义table
 	if res.IsJoin && !res.IsTable {
 		modelValue := reflect.New(typeObj)
@@ -131,11 +132,10 @@ type buildOrmRes struct {
 	json2f  map[string]string
 }
 
-func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds *[]string) (*gorm.DB, *buildOrmRes) {
+func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds *[]string, json2f map[string]string) (*gorm.DB, *buildOrmRes) {
 	ok := false
 	isJoin := false
 	isTable := false
-	json2f := make(map[string]string)
 	for i := 0; i < typeObj.NumField(); i++ {
 		json2db(typeObj.Field(i).Tag.Get("json"), typeObj.Field(i).Tag.Get("gorm"), json2f)
 		tags := getTags(typeObj.Field(i).Tag.Get("gsql"))
@@ -161,7 +161,7 @@ func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds 
 			*searchFileds = append(*searchFileds, tags.Search)
 		}
 		if typeObj.Field(i).Type.Kind() == reflect.Struct {
-			vdb, res := buildORMItem(typeObj.Field(i).Type, db, selectFileds, searchFileds)
+			vdb, res := buildORMItem(typeObj.Field(i).Type, db, selectFileds, searchFileds, json2f)
 			if res.IsJoin {
 				isJoin = res.IsJoin
 			}
