@@ -754,7 +754,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		if ok {
 			db = borm
 		} else {
-			db = db.Model(resType)
+			db = borm.Model(resType)
 		}
 
 		if !resources.All {
