@@ -135,6 +135,10 @@ func (m *CommonModel) SetCreatedBy(uid string) {
 	m.CreatedBy = uid
 }
 
+func (m *CommonModel) GetDeleteAt() {
+
+}
+
 type CommonModelInf interface {
 	GenID()
 	SetID(id string)
@@ -142,6 +146,10 @@ type CommonModelInf interface {
 	Bus() string
 	SetCreatedBy(uid string)
 	SetAppId(appId string)
+}
+
+type CommonModelDelInf interface {
+	GetDeleteAt()
 }
 
 type SimpleModel struct {
@@ -806,11 +814,15 @@ func (c *BaseInfoController) List(g *gin.Context) {
 
 	var total int64
 	if pageNum != "" {
-		dw := "deleted_at is NULL"
-		if len(db.Statement.Table) != 0 {
-			dw = db.Statement.Table + "." + dw
+		if _, ok := res.(CommonModelDelInf); ok {
+			dw := "deleted_at is NULL"
+			if len(db.Statement.Table) != 0 {
+				dw = db.Statement.Table + "." + dw
+			}
+			db = db.Where(dw)
 		}
-		err = db.Where(dw).Where(q).Count(&total).Error
+
+		err = db.Where(q).Count(&total).Error
 		if err != nil {
 			c.Error(g, err)
 			return
