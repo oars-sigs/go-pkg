@@ -63,7 +63,9 @@ func BuildGen(data any, kind string) {
 			searchText += valueObj.FieldByName(item.Name).Interface().(string) + spy + qpy
 		}
 	}
-	valueObj.FieldByName("SearchText").Set(reflect.ValueOf(searchText))
+	if valueObj.FieldByName("SearchText").IsValid() {
+		valueObj.FieldByName("SearchText").Set(reflect.ValueOf(searchText))
+	}
 }
 
 func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB, bool) {
