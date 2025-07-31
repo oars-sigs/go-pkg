@@ -144,6 +144,36 @@ type CommonModelInf interface {
 	SetAppId(appId string)
 }
 
+type SimpleModel struct {
+	Id        string `json:"id" gorm:"column:id;type:varchar(40);size:40"`
+	Created   int64  `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
+	Updated   int64  `json:"updated" gorm:"column:updated;autoUpdateTime:milli;comment:更新时间戳"`
+	CreatedBy string `json:"createdBy" gorm:"column:created_by;type:varchar(255);size:255;comment:创建用户ID"`
+}
+
+func (m *SimpleModel) GenID() {
+	m.Id = uuid.NewString()
+}
+
+func (m *SimpleModel) SetID(id string) {
+	m.Id = id
+}
+func (m *SimpleModel) GetId() string {
+	return m.Id
+}
+func (m *SimpleModel) Bus() string {
+	return "ID"
+}
+func (m *SimpleModel) SetAppId(appId string) {
+}
+
+func (m *SimpleModel) GenCreate(c any, g *gin.Context) error {
+	return nil
+}
+func (m *SimpleModel) SetCreatedBy(uid string) {
+	m.CreatedBy = uid
+}
+
 type StoreTransaction interface {
 	GetDB() *gorm.DB
 }
