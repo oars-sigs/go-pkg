@@ -133,6 +133,7 @@ func (t Task) Loop(ctxAction *customAction) {
 	m := func(conf *Config, params interface{}) (interface{}, error) {
 		var res interface{}
 		var err error
+		var ctxDatas []interface{}
 
 		var cwg sync.WaitGroup
 		cwg.Add(len(ls))
@@ -166,10 +167,11 @@ func (t Task) Loop(ctxAction *customAction) {
 					isContinue = true
 					err = nil
 				}
+				ctxDatas = append(ctxDatas, res)
 			}(p)
 		}
 		cwg.Wait()
-		return res, err
+		return ctxDatas, err
 	}
 	ctxAction.a = &customFuncAction{m, ctxAction.a.Params()}
 }
@@ -186,7 +188,7 @@ func (t Task) MultiTasks(ctxAction *customAction) {
 			Next:    playbook.Next,
 		}
 		err := playbook.Run(config)
-		return nil, err
+		return gv.Vars()["ctx"], err
 	}
 	ctxAction.a = &customFuncAction{m, nil}
 }
