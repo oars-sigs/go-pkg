@@ -201,6 +201,19 @@ func (t Task) SwitchTask(ctxAction *customAction) {
 	var err error
 	m := func(conf *Config, params interface{}) (interface{}, error) {
 		key := parseParams(ctxAction.Switch.Key, ctxAction.vars).(string)
+		if len(ctxAction.Switch.Tasks) != 0 {
+			if ts, ok := ctxAction.Switch.Tasks[key]; ok {
+				res := &customAction{
+					gawait: ctxAction.gawait,
+					vars:   ctxAction.vars,
+					conf:   ctxAction.conf,
+					Tasks:  ts,
+				}
+				res.params = getLoopMap(LoopRes{Item: "$.ctx.item", ItemKey: "$.ctx.itemKey"})
+				t.MultiTasks(res)
+				return res.Do()
+			}
+		}
 		if len(ctxAction.Switch.Task) != 0 && conf.Next != nil {
 			for skey, id := range ctxAction.Switch.Task {
 				if skey == key {
