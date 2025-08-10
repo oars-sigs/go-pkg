@@ -213,6 +213,17 @@ func (t Task) SwitchTask(ctxAction *customAction) {
 				t.MultiTasks(res)
 				return res.Do()
 			}
+			if ts, ok := ctxAction.Switch.Tasks["$default"]; ok {
+				res := &customAction{
+					gawait: ctxAction.gawait,
+					vars:   ctxAction.vars,
+					conf:   ctxAction.conf,
+					Tasks:  ts,
+				}
+				res.params = getLoopMap(LoopRes{Item: "$.ctx.item", ItemKey: "$.ctx.itemKey"})
+				t.MultiTasks(res)
+				return res.Do()
+			}
 		}
 		if len(ctxAction.Switch.Task) != 0 && conf.Next != nil {
 			for skey, id := range ctxAction.Switch.Task {
