@@ -9,6 +9,15 @@ import (
 )
 
 func Run(path string, valuePath ...string) error {
+	vp := ""
+	if len(valuePath) > 0 {
+		vp = valuePath[0]
+	}
+
+	return RunOutput(path, vp, nil)
+}
+
+func RunOutput(path string, valuePath string, taskHook func(name string, data any)) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -20,14 +29,15 @@ func Run(path string, valuePath ...string) error {
 	}
 	p.await = newAwait()
 	conf := &Config{
-		Next:    p.Next,
-		Workdir: ".",
+		Next:     p.Next,
+		Workdir:  ".",
+		TaskHook: taskHook,
 	}
 	if p.Values == nil {
 		p.Values = make(map[string]interface{})
 	}
-	if len(valuePath) > 0 && valuePath[0] != "" {
-		data, err := os.ReadFile(valuePath[0])
+	if valuePath != "" {
+		data, err := os.ReadFile(valuePath)
 		if err != nil {
 			return err
 		}
@@ -52,7 +62,16 @@ func Run(path string, valuePath ...string) error {
 	AddCustomActions("setface", new(SetfaceAction))
 	AddCustomActions("break", new(LoopBreak))
 	AddCustomActions("continue", new(LoopContinue))
-	return p.Run(conf)
+	err = p.Run(conf)
+	if err != nil {
+		return err
+	}
+	if p.Output != "" {
+		v, _ := p.gvars.GetVar(p.Output)
+		taskHook("sys.end.output", v)
+	}
+
+	return nil
 }
 
 type Playbook struct {
@@ -60,6 +79,7 @@ type Playbook struct {
 	Values    map[string]interface{} `yaml:"values"`
 	Modules   []Module               `yaml:"modules"`
 	Imports   []string               `yaml:"imports"`
+	Output    string                 `yaml:"output"`
 	gvars     *Gvars
 	index     int
 	await     *gawait

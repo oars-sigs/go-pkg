@@ -184,8 +184,9 @@ func (t Task) MultiTasks(ctxAction *customAction) {
 		gv := ctxAction.vars.SetCtx(params.(map[string]interface{}))
 		playbook := NewPlaybook(ctxAction.Tasks, gv)
 		config := &Config{
-			Workdir: ctxAction.conf.Workdir,
-			Next:    playbook.Next,
+			Workdir:  ctxAction.conf.Workdir,
+			Next:     playbook.Next,
+			TaskHook: ctxAction.conf.TaskHook,
 		}
 		err := playbook.Run(config)
 		return gv.Vars()["ctx"], err
@@ -265,8 +266,9 @@ func (t Task) DeferTask(ctxAction *customAction) {
 	m := func(conf *Config, params interface{}) (interface{}, error) {
 		playbook := NewPlaybook(ctxAction.DeferTasks, ctxAction.vars)
 		config := &Config{
-			Workdir: ctxAction.conf.Workdir,
-			Next:    playbook.Next,
+			Workdir:  ctxAction.conf.Workdir,
+			Next:     playbook.Next,
+			TaskHook: ctxAction.conf.TaskHook,
 		}
 		err := playbook.Run(config)
 		return nil, err
@@ -291,6 +293,7 @@ type customAction struct {
 	Output      string      `yaml:"output"`
 	DeferTasks  []Task      `yaml:"defer"`
 	Debug       bool        `yaml:"debug"`
+	Name        string      `yaml:"name"`
 }
 
 type Switch struct {
@@ -327,6 +330,9 @@ func (a *customAction) Do() (interface{}, error) {
 	}
 	if a.Debug {
 		fmt.Printf("debug: %v\n", res)
+	}
+	if conf.TaskHook != nil {
+		conf.TaskHook(a.Name, nil)
 	}
 	return res, err
 }
