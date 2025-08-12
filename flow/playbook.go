@@ -17,7 +17,7 @@ func Run(path string, valuePath ...string) error {
 	return RunOutput(path, vp, nil)
 }
 
-func RunOutput(path string, valuePath string, taskHook func(name string, data any)) error {
+func RunOutput(path string, valuePath string, taskHook func(name, id, state string, data any)) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func RunOutput(path string, valuePath string, taskHook func(name string, data an
 	}
 	if p.Output != "" {
 		v, _ := p.gvars.GetVar(p.Output)
-		taskHook("sys.end.output", v)
+		taskHook("sys.end.output", "", "success", v)
 	}
 
 	return nil

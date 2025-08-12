@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -303,12 +304,17 @@ type Switch struct {
 }
 
 func (a *customAction) Do() (interface{}, error) {
+	id := uuid.NewString()
 	if a.When != "" {
 		if !when(a.When, a.vars) {
+			go a.conf.TaskHook(a.Name, id, "skip", nil)
 			return nil, nil
 		}
 	}
 	conf := a.conf
+	if conf.TaskHook != nil {
+		go conf.TaskHook(a.Name, id, "start", nil)
+	}
 	params := a.params
 	if len(a.Await) > 0 {
 		err := a.gawait.Await(a.Await, a.IgnoreErr)
@@ -321,6 +327,9 @@ func (a *customAction) Do() (interface{}, error) {
 		go func(conf *Config, params interface{}) {
 			_, err := a.runTask(a.a, conf, params)
 			a.gawait.DoneAwait(a.Async, err)
+			if conf.TaskHook != nil {
+				go conf.TaskHook(a.Name, id, "success", nil)
+			}
 		}(conf, params)
 		return nil, nil
 	}
@@ -332,7 +341,11 @@ func (a *customAction) Do() (interface{}, error) {
 		fmt.Printf("debug: %v\n", res)
 	}
 	if conf.TaskHook != nil {
-		conf.TaskHook(a.Name, nil)
+		if err != nil {
+			go conf.TaskHook(a.Name, id, "error", nil)
+		} else {
+			go conf.TaskHook(a.Name, id, "success", nil)
+		}
 	}
 	return res, err
 }
