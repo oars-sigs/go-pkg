@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -67,7 +68,7 @@ func RunOutput(path string, valuePath string, taskHook func(name, id, state stri
 		return err
 	}
 	if p.Output != "" {
-		v, _ := p.gvars.GetVar(p.Output)
+		v, _ := p.gvars.GetVar(strings.TrimPrefix(p.Output, "$."))
 		taskHook("sys.end.output", "", "success", v)
 	}
 
