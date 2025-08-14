@@ -318,8 +318,14 @@ func (c *BaseInfoController) GetBaseInfo(resource string, g *gin.Context, kind s
 			m = um.ImportResourceModel()
 		}
 	}
+	if kind == CreateInBatchesKind {
+		if um, ok := md.m.(BatchesInCreateResourceModel); ok {
+			m = um.CreateInBatchesResourceModel()
+		}
+	}
 	if g != nil {
-		err := g.ShouldBindJSON(m)
+		var err error
+		err = g.ShouldBindJSON(m)
 		if err != nil {
 			return nil, err
 		}
@@ -1256,8 +1262,8 @@ func (c *BaseInfoController) CreateInBatches(g *gin.Context) {
 		return
 	}
 	d := reflect.ValueOf(m)
-	for i := 0; i < d.Len(); i++ {
-		if v, ok := d.Index(i).Interface().(CommonModelInf); ok {
+	for i := 0; i < d.Elem().Len(); i++ {
+		if v, ok := d.Elem().Index(i).Interface().(CommonModelInf); ok {
 			v.GenID()
 		}
 	}
