@@ -21,12 +21,13 @@ import (
 )
 
 const (
-	ListKind   = "list"
-	CreateKind = "create"
-	UpdateKind = "update"
-	GetKind    = "get"
-	DeleteKind = "delete"
-	ImportKind = "import"
+	ListKind            = "list"
+	CreateKind          = "create"
+	CreateInBatchesKind = "create_batches"
+	UpdateKind          = "update"
+	GetKind             = "get"
+	DeleteKind          = "delete"
+	ImportKind          = "import"
 
 	MsgCtx = "msgCtx"
 )
@@ -66,6 +67,10 @@ type CommonModelChangeCallback interface {
 	ChangeCallback(data any, action string)
 }
 
+type CommonModelCreateInBatches interface {
+	CreateInBatchesORM(data any, db *gorm.DB, g *gin.Context) error
+}
+
 type UpdateResourceModel interface {
 	UpdateResourceModel() interface{}
 }
@@ -84,6 +89,10 @@ type DeleteResourceModel interface {
 
 type ImportResourceModel interface {
 	ImportResourceModel() interface{}
+}
+
+type BatchesInCreateResourceModel interface {
+	CreateInBatchesResourceModel() interface{}
 }
 
 type GetResourceName interface {
@@ -1220,6 +1229,39 @@ func (c *BaseInfoController) Import(g *gin.Context) {
 		}
 	}
 	db := c.Tx.GetDB()
+	err = db.CreateInBatches(m, 100).Error
+	if err != nil {
+		c.Error(g, err)
+		return
+	}
+	c.OK(g, nil)
+}
+
+func (c *BaseInfoController) CreateInBatches(g *gin.Context) {
+	resource := g.Param("resource")
+	m, err := c.GetBaseInfo(resource, g, CreateInBatchesKind)
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	db := c.Tx.GetDB()
+	if l, ok := c.GetService(resource).(CommonModelCreateInBatches); ok {
+		err = l.CreateInBatchesORM(m, db, g)
+		if err != nil {
+			c.Error(g, err)
+			return
+		}
+		c.OK(g, nil)
+		return
+	}
+	d := reflect.ValueOf(m)
+	for i := 0; i < d.Len(); i++ {
+		if v, ok := d.Index(i).Interface().(CommonModelInf); ok {
+			v.GenID()
+		}
+	}
+
 	err = db.CreateInBatches(m, 100).Error
 	if err != nil {
 		c.Error(g, err)
