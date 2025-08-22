@@ -27,6 +27,11 @@ type page struct {
 	List interface{} `json:"rows"`
 }
 
+type PageResp struct {
+	Page
+	List interface{} `json:"rows"`
+}
+
 type Error struct {
 	RequestId string `json:"requestId,omitempty"`
 	Code      int    `json:"code,omitempty"`

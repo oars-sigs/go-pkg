@@ -12,7 +12,9 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"pkg.oars.vip/go-pkg/server/base"
 )
 
 const (
@@ -169,6 +171,27 @@ func BuildLike(s string) string {
 		return s
 	}
 	return "%" + s + "%"
+}
+func FindWithPage(db *gorm.DB, g *gin.Context, res any) (any, error) {
+	var page base.Page
+	g.ShouldBindQuery(&page)
+	var total int64
+	err := db.Count(&total).Error
+	if err != nil {
+		return nil, err
+	}
+	if page.PageNum > 0 && page.PageSize > 0 {
+		db = db.Offset((page.PageNum - 1) * page.PageSize).Limit(page.PageSize)
+	}
+	err = db.Find(&res).Error
+	if err != nil {
+		return nil, err
+	}
+	resp := base.PageResp{
+		List: res,
+		Page: page,
+	}
+	return resp, err
 }
 
 func init() {
