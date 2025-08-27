@@ -187,6 +187,9 @@ func FindWithPage(db *gorm.DB, g *gin.Context, res any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	if page.PageNum > 0 && page.PageSize > 0 {
+		return res, nil
+	}
 	resp := base.PageResp{
 		List: res,
 		Page: page,
