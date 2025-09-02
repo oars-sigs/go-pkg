@@ -166,8 +166,8 @@ func (c *BaseInfoController) FlowHook(h *former.Hook) error {
 	if err != nil {
 		return err
 	}
-	if svc, ok := c.GetService(flowInfo.FromType).(FlowHookSvc); ok {
-		return svc.FlowHook(h)
+	if svc, ok := c.GetService(flowInfo.FromType).(FlowHookWithResourceSvc); ok {
+		return svc.FlowHook(h, &flowInfo)
 	}
 
 	if h.Event != "status" {

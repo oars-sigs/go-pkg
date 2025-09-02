@@ -106,6 +106,9 @@ type DisablePermission interface {
 type FlowHookSvc interface {
 	FlowHook(h *former.Hook) error
 }
+type FlowHookWithResourceSvc interface {
+	FlowHook(h *former.Hook, flowInfo *ResourceFlowInfo) error
+}
 
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
