@@ -92,7 +92,12 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 		}
 		if flowData.ResourceData != nil {
 			if isCreate {
-				err = tx.Create(m).Error
+				BuildCreateGen(m)
+				if l, ok := c.GetService(resource).(CommonModelCreate); ok {
+					err = l.CreateORM(m, tx, g)
+				} else {
+					err = tx.Create(m).Error
+				}
 				if err != nil {
 					return err
 				}
@@ -155,14 +160,18 @@ func (c *BaseInfoController) FlowHook(h *former.Hook) error {
 	if hook, ok := c.formerHooks[h.Model.Mark]; ok {
 		return hook.FlowHook(h)
 	}
-	if h.Event != "status" {
-		return nil
-	}
 	db := c.Tx.GetDB()
 	var flowInfo ResourceFlowInfo
 	err := db.Find(&flowInfo, &ResourceFlowInfo{FlowId: h.Data.ID}).Error
 	if err != nil {
 		return err
+	}
+	if svc, ok := c.GetService(flowInfo.FromType).(FlowHookSvc); ok {
+		return svc.FlowHook(h)
+	}
+
+	if h.Event != "status" {
+		return nil
 	}
 
 	if flowInfo.CompleteData != nil {
@@ -187,6 +196,5 @@ func (c *BaseInfoController) FlowHook(h *former.Hook) error {
 		}
 
 	}
-
 	return nil
 }
