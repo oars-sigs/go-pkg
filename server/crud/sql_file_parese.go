@@ -176,25 +176,27 @@ func FindWithPage(db *gorm.DB, g *gin.Context, res any) (any, error) {
 	var page base.Page
 	g.ShouldBindQuery(&page)
 	var total int64
-	err := db.Count(&total).Error
-	if err != nil {
-		return nil, err
-	}
 	if page.PageNum > 0 && page.PageSize > 0 {
+		err := db.Count(&total).Error
+		if err != nil {
+			return nil, err
+		}
 		db = db.Offset((page.PageNum - 1) * page.PageSize).Limit(page.PageSize)
 	}
-	err = db.Find(&res).Error
+	err := db.Find(&res).Error
 	if err != nil {
 		return nil, err
 	}
+	page.Total = int(total)
 	if page.PageNum > 0 && page.PageSize > 0 {
-		return res, nil
+		resp := base.PageResp{
+			List: res,
+			Page: page,
+		}
+		return resp, err
+
 	}
-	resp := base.PageResp{
-		List: res,
-		Page: page,
-	}
-	return resp, err
+	return res, nil
 }
 
 func init() {
