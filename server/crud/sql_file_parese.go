@@ -183,7 +183,7 @@ func FindWithPage(db *gorm.DB, g *gin.Context, res any) (any, error) {
 		}
 		db = db.Offset((page.PageNum - 1) * page.PageSize).Limit(page.PageSize)
 	}
-	err := db.Find(&res).Error
+	err := db.Find(res).Error
 	if err != nil {
 		return nil, err
 	}
