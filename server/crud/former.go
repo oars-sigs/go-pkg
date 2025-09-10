@@ -119,6 +119,24 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 	c.OK(g, res)
 }
 
+func (c *BaseInfoController)Approve(g *gin.Context){
+	resource := g.Param("resource")
+	m, err := c.GetBaseInfo(resource, nil, GetKind)
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+	if svc,ok:=c.GetService(resource).(FlowHookBeforeApprove);ok{
+		svc.FlowHookBeforeApprove(c.GetUid(g),m.(*former.BusTask))
+	}
+
+	uid:=c.GetUid(g)
+	c.opt.Former.Approve(uid, &former.BusTask{
+		
+	})
+}
+
 func CreateFormer(db *gorm.DB, formercli *former.Client, id, uid, resource, modelMark string, flowData map[string]any, completeData datatypes.JSON) (*ResourceFlowInfo, error) {
 	m, err := formercli.GetModel(uid, &former.BusData{
 		ModelMark:  modelMark,

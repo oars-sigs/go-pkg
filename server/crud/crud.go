@@ -110,6 +110,10 @@ type FlowHookWithResourceSvc interface {
 	FlowHook(h *former.Hook, flowInfo *ResourceFlowInfo) error
 }
 
+type FlowHookBeforeApprove interface {
+	FlowHookBeforeApprove(uid string, data *former.BusTask) error
+}
+
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
 	Created    int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`

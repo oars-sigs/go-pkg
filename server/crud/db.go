@@ -118,10 +118,13 @@ func buildORM(typeObj reflect.Type, db *gorm.DB, opt *BuildORMOption) (*gorm.DB,
 	}
 	if opt.SortField != "" {
 		if opt.Order == "2" {
-			db = db.Order(res.json2f[opt.SortField] + " desc")
+			db = db.Order("`" + res.json2f[opt.SortField] + "` desc")
 		} else {
-			db = db.Order(res.json2f[opt.SortField] + " asc")
+			db = db.Order("`" + res.json2f[opt.SortField] + "` asc")
 		}
+	}
+	for _, v := range opt.Order {
+		db = db.Order(v)
 	}
 
 	return db, res.Change
@@ -188,6 +191,7 @@ type gSql struct {
 	Search     string
 	SearchText string
 	ToMany     []string
+	Order      []string
 }
 
 func getTags(s string) *gSql {
@@ -220,6 +224,8 @@ func getTags(s string) *gSql {
 			res.ToMany = append(res.ToMany, keys[1])
 		case "search":
 			res.Search = keys[1]
+		case "order":
+			res.Order = append(res.Order, keys[1])
 		}
 	}
 	return res

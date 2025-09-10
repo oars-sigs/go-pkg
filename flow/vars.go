@@ -10,6 +10,7 @@ import (
 
 type Vars struct {
 	Values map[string]interface{}
+	States map[string]interface{}
 	Ctx    map[string]interface{}
 	Global map[string]interface{}
 }
@@ -37,6 +38,7 @@ func (p *Gvars) SetCtx(ctx map[string]interface{}) *Gvars {
 	return &Gvars{
 		data: &Vars{
 			Values: p.data.Values,
+			States: p.data.States,
 			Ctx:    ctx,
 		},
 		mutex: p.mutex,
@@ -49,6 +51,7 @@ func (p *Gvars) Vars() map[string]interface{} {
 	res := make(map[string]interface{})
 	vars := p.data
 	res["values"] = maps.Clone(vars.Values)
+	res["states"] = maps.Clone(vars.States)
 	res["ctx"] = maps.Clone(vars.Ctx)
 	res["global"] = maps.Clone(vars.Global)
 	return res
@@ -69,6 +72,8 @@ func (p *Gvars) GetVar(s string) (interface{}, bool) {
 			p = mapcopy(vars.Ctx).(map[string]interface{})
 		case "global":
 			p = vars.Global
+		case "states":
+			p = vars.States
 		default:
 			return nil, false
 		}
@@ -114,6 +119,8 @@ func (p *Gvars) SetVar(s string, value interface{}) {
 			p = vars.Ctx
 		case "global":
 			p = vars.Global
+		case "states":
+			p = vars.States
 		default:
 			return
 		}

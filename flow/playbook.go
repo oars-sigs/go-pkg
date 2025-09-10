@@ -37,6 +37,9 @@ func RunOutput(path string, valuePath string, taskHook func(name, id, state stri
 	if p.Values == nil {
 		p.Values = make(map[string]interface{})
 	}
+	if p.States == nil {
+		p.States = make(map[string]interface{})
+	}
 	if valuePath != "" {
 		data, err := os.ReadFile(valuePath)
 		if err != nil {
@@ -52,6 +55,7 @@ func RunOutput(path string, valuePath string, taskHook func(name, id, state stri
 		}
 	}
 	vars := &Vars{
+		States: p.States,
 		Values: p.Values,
 		Ctx:    make(map[string]interface{}),
 	}
@@ -70,12 +74,14 @@ func RunOutput(path string, valuePath string, taskHook func(name, id, state stri
 	if p.Output != "" {
 		v, _ := p.gvars.GetVar(strings.TrimPrefix(p.Output, "$."))
 		taskHook("sys.end.output", "", "success", v)
+		taskHook("sys.end.states", "", "success", p.gvars.data.States)
 	}
 
 	return nil
 }
 
 type Playbook struct {
+	States    map[string]interface{} `yaml:"states"`
 	Tasks     []Task                 `yaml:"tasks"`
 	Values    map[string]interface{} `yaml:"values"`
 	Modules   []Module               `yaml:"modules"`
