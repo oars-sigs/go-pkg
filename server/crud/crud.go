@@ -46,12 +46,20 @@ type CommonModelListGen interface {
 	ListGen(any) any
 }
 
+type CommonModelListGenWithCtx interface {
+	ListGen(data any, g *gin.Context) any
+}
+
 type CommonModelGet interface {
 	GetORM(db *gorm.DB, id string, g *gin.Context) (*gorm.DB, interface{}, error)
 }
 
 type CommonModelGetGen interface {
 	GetGen(any) any
+}
+
+type CommonModelGetGenWithCtx interface {
+	GetGen(data any, g *gin.Context) any
 }
 
 type CommonModelCreate interface {
@@ -755,6 +763,9 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 	if l, ok := c.GetService(resource).(CommonModelGetGen); ok {
 		res = l.GetGen(res)
 	}
+	if l, ok := c.GetService(resource).(CommonModelGetGenWithCtx); ok {
+		res = l.GetGen(res, g)
+	}
 	c.OK(g, res, g.GetString(MsgCtx))
 }
 
@@ -912,6 +923,9 @@ func (c *BaseInfoController) List(g *gin.Context) {
 	}
 	if l, ok := c.GetService(resource).(CommonModelListGen); ok {
 		res = l.ListGen(res)
+	}
+	if l, ok := c.GetService(resource).(CommonModelListGenWithCtx); ok {
+		res = l.ListGen(res, g)
 	}
 	if pageNum != "" {
 		c.PageOK(g, res, int(total), page.PageNum, page.PageSize)
