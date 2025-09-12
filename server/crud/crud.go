@@ -114,6 +114,10 @@ type FlowHookBeforeApprove interface {
 	FlowHookBeforeApprove(uid string, data *former.BusTask) error
 }
 
+type IsView interface {
+	IsView() bool
+}
+
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
 	Created    int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
@@ -151,8 +155,12 @@ func (m *CommonModel) SetCreatedBy(uid string) {
 	m.CreatedBy = uid
 }
 
-func (m *CommonModel) GetDeleteAt() {
+func (m *CommonModel) GetDeleteAt() gorm.DeletedAt {
+	return m.DeletedAt
+}
 
+func (m *CommonModel) GetCreated() int64 {
+	return m.Created
 }
 
 type CommonModelInf interface {
@@ -165,7 +173,11 @@ type CommonModelInf interface {
 }
 
 type CommonModelDelInf interface {
-	GetDeleteAt()
+	GetDeleteAt() gorm.DeletedAt
+}
+
+type CommonModelCreatedInf interface {
+	GetCreated() int64
 }
 
 type SimpleModel struct {
@@ -196,6 +208,40 @@ func (m *SimpleModel) GenCreate(c any, g *gin.Context) error {
 }
 func (m *SimpleModel) SetCreatedBy(uid string) {
 	m.CreatedBy = uid
+}
+
+func (m *SimpleModel) GetCreated() int64 {
+	return m.Created
+}
+
+type ViewModel struct {
+}
+
+func (m *ViewModel) GenID() {
+
+}
+
+func (m *ViewModel) SetID(id string) {
+
+}
+func (m *ViewModel) GetId() string {
+	return ""
+}
+func (m *ViewModel) Bus() string {
+	return ""
+}
+func (m *ViewModel) SetAppId(appId string) {
+}
+
+func (m *ViewModel) GenCreate(c any, g *gin.Context) error {
+	return nil
+}
+func (m *ViewModel) SetCreatedBy(uid string) {
+
+}
+
+func (m *ViewModel) IsView() bool {
+	return true
 }
 
 type StoreTransaction interface {
@@ -854,7 +900,11 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		db = db.Limit(page.PageSize).Offset(start)
 	}
 
-	err = db.Order("created desc").Find(&res, q).Error
+	if _, ok := res.(CommonModelCreatedInf); ok {
+		db = db.Order("created desc")
+	}
+
+	err = db.Find(&res, q).Error
 	if err != nil {
 		logrus.Error(err)
 		c.Error(g, err)
