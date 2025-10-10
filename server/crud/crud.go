@@ -895,7 +895,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 				return
 			}
 			if !ok {
-				c.Error(g, perr.ErrForbidden)
+				c.Error(g, c.getErrForbidden(GetKind, res))
 				return
 			}
 		}
