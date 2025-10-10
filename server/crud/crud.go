@@ -130,6 +130,10 @@ type IsView interface {
 	IsView() bool
 }
 
+type GetResourceLabel interface {
+	GetResourceLabel() string
+}
+
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
 	Created    int64          `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
@@ -285,6 +289,11 @@ type Option struct {
 	OperationLogSrv OperationLogService
 	Mgr             any
 	Former          *former.Client
+	PrResources     PrResources
+}
+
+type PrResources interface {
+	GetName(key string) string
 }
 
 type Page struct {
@@ -450,7 +459,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, perr.ErrForbidden)
+					c.Error(g, c.getErrForbidden(CreateKind, m))
 					return
 				}
 			}
@@ -471,7 +480,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, perr.ErrForbidden)
+					c.Error(g, c.getErrForbidden(CreateKind, m))
 					return
 				}
 			}
@@ -489,7 +498,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 				return
 			}
 			if !ok {
-				c.Error(g, perr.ErrForbidden)
+				c.Error(g, c.getErrForbidden(CreateKind, m))
 				return
 			}
 		}
@@ -564,7 +573,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, perr.ErrForbidden)
+					c.Error(g, c.getErrForbidden(UpdateKind, m))
 					return
 				}
 			}
@@ -585,7 +594,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, perr.ErrForbidden)
+					c.Error(g, c.getErrForbidden(UpdateKind, m))
 					return
 				}
 			}
@@ -603,7 +612,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 				return
 			}
 			if !ok {
-				c.Error(g, perr.ErrForbidden)
+				c.Error(g, c.getErrForbidden(UpdateKind, m))
 				return
 			}
 		}
@@ -694,7 +703,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, perr.ErrForbidden)
+					c.Error(g, c.getErrForbidden(DeleteKind, m))
 					return
 				}
 			}
@@ -733,7 +742,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 				return
 			}
 			if !ok {
-				c.Error(g, perr.ErrForbidden)
+				c.Error(g, c.getErrForbidden(DeleteKind, m))
 				return
 			}
 		}
@@ -766,6 +775,26 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		c.genOperationLog(log, nil, m)
 	}
 	c.OK(g, nil, g.GetString(MsgCtx))
+}
+
+func (c *BaseInfoController) getErrForbidden(action string, res any) error {
+	msg := "无权限"
+	if action == GetKind {
+		action = "查看"
+	}
+	if action == CreateKind {
+		action = "创建"
+	}
+	if action == UpdateKind {
+		action = "更新"
+	}
+	if action == DeleteKind {
+		action = "删除"
+	}
+	if r, ok := res.(GetResourceLabel); ok {
+		msg = msg + action + r.GetResourceLabel()
+	}
+	return perr.ErrForbidden.SetMsg(msg)
 }
 
 func (c *BaseInfoController) Get(g *gin.Context) {
@@ -827,7 +856,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, perr.ErrForbidden)
+					c.Error(g, c.getErrForbidden(GetKind, res))
 					return
 				}
 			}
@@ -848,7 +877,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, perr.ErrForbidden)
+					c.Error(g, c.getErrForbidden(GetKind, res))
 					return
 				}
 			}
@@ -911,6 +940,13 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		All: true,
 	}
 
+	res, err := c.GetBaseInfo(resource, nil, ListKind)
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
+
 	if c.EnPermission(q) {
 		if v, ok := q.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
@@ -928,7 +964,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, perr.ErrForbidden)
+					c.Error(g, c.getErrForbidden(GetKind, res))
 					return
 				}
 			}
@@ -951,13 +987,6 @@ func (c *BaseInfoController) List(g *gin.Context) {
 				}
 			}
 		}
-	}
-
-	res, err := c.GetBaseInfo(resource, nil, ListKind)
-	if err != nil {
-		logrus.Error(err)
-		c.Error(g, err)
-		return
 	}
 
 	resType, err := c.GetBaseInfo(resource, nil, GetKind)
