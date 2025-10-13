@@ -1027,6 +1027,29 @@ func (c *BaseInfoController) List(g *gin.Context) {
 	}
 
 	if c.EnPermission(q) {
+		if v, ok := q.(GetListResourceName); ok {
+			prResource, prResourceName := v.GetListResourceName()
+			//只有资源ID不为空时才进行权限检查
+			if prResourceName != "" {
+				ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
+					Group:        c.resourceGroup,
+					Resource:     prResource,
+					ResourceName: prResourceName,
+					Action:       ListKind,
+					UserId:       c.GetUid(g),
+				})
+				if err != nil {
+					logrus.Error(err)
+					c.Error(g, err)
+					return
+				}
+				if !ok {
+					c.Error(g, c.getErrForbidden(CreateKind, q))
+					return
+				}
+			}
+
+		}
 		if v, ok := q.(GetResourceName); ok {
 			prResource, prResourceName := v.GetResourceName()
 			if prResource != resource {
