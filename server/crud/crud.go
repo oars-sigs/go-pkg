@@ -133,6 +133,9 @@ type IsView interface {
 type GetResourceLabel interface {
 	GetResourceLabel() string
 }
+type GetListResourceName interface {
+	GetListResourceName() (string, string)
+}
 
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
@@ -434,6 +437,25 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		return
 	}
 	if c.EnPermission(m) {
+		if v, ok := m.(GetListResourceName); ok {
+			prResource, prResourceName := v.GetListResourceName()
+			ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
+				Group:        c.resourceGroup,
+				Resource:     prResource,
+				ResourceName: prResourceName,
+				Action:       ListKind,
+				UserId:       c.GetUid(g),
+			})
+			if err != nil {
+				logrus.Error(err)
+				c.Error(g, err)
+				return
+			}
+			if !ok {
+				c.Error(g, c.getErrForbidden(CreateKind, m))
+				return
+			}
+		}
 		if v, ok := c.GetService(resource).(ResourceEnforce); ok {
 			param, err := v.ResourceEnforce(c.Tx.GetDB(), g, c.idaas, CreateKind)
 			if err != nil {
@@ -548,6 +570,25 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		return
 	}
 	if c.EnPermission(m) {
+		if v, ok := m.(GetListResourceName); ok {
+			prResource, prResourceName := v.GetListResourceName()
+			ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
+				Group:        c.resourceGroup,
+				Resource:     prResource,
+				ResourceName: prResourceName,
+				Action:       ListKind,
+				UserId:       c.GetUid(g),
+			})
+			if err != nil {
+				logrus.Error(err)
+				c.Error(g, err)
+				return
+			}
+			if !ok {
+				c.Error(g, c.getErrForbidden(UpdateKind, m))
+				return
+			}
+		}
 		if v, ok := c.GetService(resource).(ResourceEnforce); ok {
 			param, err := v.ResourceEnforce(c.Tx.GetDB(), g, c.idaas, UpdateKind)
 			if err != nil {
@@ -678,6 +719,25 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 	}
 	if c.EnPermission(m) {
 		q, _ := c.getRes(resource, id)
+		if v, ok := q.(GetListResourceName); ok {
+			prResource, prResourceName := v.GetListResourceName()
+			ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
+				Group:        c.resourceGroup,
+				Resource:     prResource,
+				ResourceName: prResourceName,
+				Action:       ListKind,
+				UserId:       c.GetUid(g),
+			})
+			if err != nil {
+				logrus.Error(err)
+				c.Error(g, err)
+				return
+			}
+			if !ok {
+				c.Error(g, c.getErrForbidden(DeleteKind, q))
+				return
+			}
+		}
 		if v, ok := c.GetService(resource).(ResourceEnforce); ok {
 			param, err := v.ResourceEnforce(c.Tx.GetDB(), g, c.idaas, DeleteKind)
 			if err != nil {
@@ -831,6 +891,25 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		}
 	}
 	if c.EnPermission(vres) {
+		if v, ok := res.(GetListResourceName); ok {
+			prResource, prResourceName := v.GetListResourceName()
+			ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
+				Group:        c.resourceGroup,
+				Resource:     prResource,
+				ResourceName: prResourceName,
+				Action:       ListKind,
+				UserId:       c.GetUid(g),
+			})
+			if err != nil {
+				logrus.Error(err)
+				c.Error(g, err)
+				return
+			}
+			if !ok {
+				c.Error(g, c.getErrForbidden(GetKind, res))
+				return
+			}
+		}
 		if v, ok := c.GetService(resource).(ResourceEnforce); ok {
 			param, err := v.ResourceEnforce(c.Tx.GetDB(), g, c.idaas, GetKind)
 			if err != nil {
