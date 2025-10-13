@@ -1044,7 +1044,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 					return
 				}
 				if !ok {
-					c.Error(g, c.getErrForbidden(CreateKind, q))
+					c.Error(g, c.getErrForbidden(GetKind, q))
 					return
 				}
 			}
