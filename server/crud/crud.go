@@ -439,21 +439,23 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 	if c.EnPermission(m) {
 		if v, ok := m.(GetListResourceName); ok {
 			prResource, prResourceName := v.GetListResourceName()
-			ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
-				Group:        c.resourceGroup,
-				Resource:     prResource,
-				ResourceName: prResourceName,
-				Action:       ListKind,
-				UserId:       c.GetUid(g),
-			})
-			if err != nil {
-				logrus.Error(err)
-				c.Error(g, err)
-				return
-			}
-			if !ok {
-				c.Error(g, c.getErrForbidden(CreateKind, m))
-				return
+			if prResourceName != "" {
+				ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
+					Group:        c.resourceGroup,
+					Resource:     prResource,
+					ResourceName: prResourceName,
+					Action:       ListKind,
+					UserId:       c.GetUid(g),
+				})
+				if err != nil {
+					logrus.Error(err)
+					c.Error(g, err)
+					return
+				}
+				if !ok {
+					c.Error(g, c.getErrForbidden(CreateKind, m))
+					return
+				}
 			}
 		}
 		if v, ok := c.GetService(resource).(ResourceEnforce); ok {
