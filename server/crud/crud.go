@@ -574,6 +574,9 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 	if c.EnPermission(m) {
 		if v, ok := m.(GetListResourceName); ok {
 			prResource, prResourceName := v.GetListResourceName()
+			if prResourceName == "" {
+				prResourceName = id
+			}
 			ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 				Group:        c.resourceGroup,
 				Resource:     prResource,
