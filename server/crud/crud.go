@@ -136,6 +136,9 @@ type GetResourceLabel interface {
 type GetListResourceName interface {
 	GetListResourceName() (string, string)
 }
+type SetParentId interface {
+	SetParentId(string)
+}
 
 type CommonModel struct {
 	Id         string         `json:"id" gorm:"column:id;type:varchar(40);size:40"`
@@ -436,9 +439,23 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	presource := g.Param("presource")
+	pid := g.Param("pid")
+	if pid != "" {
+		if v, ok := m.(SetParentId); ok {
+			v.SetParentId(pid)
+		}
+	}
 	if c.EnPermission(m) {
-		if v, ok := m.(GetListResourceName); ok {
-			prResource, prResourceName := v.GetListResourceName()
+		if v, ok := m.(GetListResourceName); ok || presource != "" {
+			prResource := ""
+			prResourceName := ""
+			if presource != "" {
+				prResource = presource
+				prResourceName = pid
+			} else {
+				prResource, prResourceName = v.GetListResourceName()
+			}
 			if prResourceName != "" {
 				ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 					Group:        c.resourceGroup,
@@ -572,8 +589,17 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		return
 	}
 	if c.EnPermission(m) {
-		if v, ok := m.(GetListResourceName); ok {
-			prResource, prResourceName := v.GetListResourceName()
+		presource := g.Param("presource")
+		pid := g.Param("pid")
+		if v, ok := m.(GetListResourceName); ok || presource != "" {
+			prResource := ""
+			prResourceName := ""
+			if presource != "" {
+				prResource = presource
+				prResourceName = pid
+			} else {
+				prResource, prResourceName = v.GetListResourceName()
+			}
 			if prResourceName == "" {
 				prResourceName = id
 			}
@@ -724,8 +750,17 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 	}
 	if c.EnPermission(m) {
 		q, _ := c.getRes(resource, id)
-		if v, ok := q.(GetListResourceName); ok {
-			prResource, prResourceName := v.GetListResourceName()
+		presource := g.Param("presource")
+		pid := g.Param("pid")
+		if v, ok := q.(GetListResourceName); ok || presource != "" {
+			prResource := ""
+			prResourceName := ""
+			if presource != "" {
+				prResource = presource
+				prResourceName = pid
+			} else {
+				prResource, prResourceName = v.GetListResourceName()
+			}
 			ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 				Group:        c.resourceGroup,
 				Resource:     prResource,
@@ -896,8 +931,17 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		}
 	}
 	if c.EnPermission(vres) {
-		if v, ok := res.(GetListResourceName); ok {
-			prResource, prResourceName := v.GetListResourceName()
+		presource := g.Param("presource")
+		pid := g.Param("pid")
+		if v, ok := res.(GetListResourceName); ok || presource != "" {
+			prResource := ""
+			prResourceName := ""
+			if presource != "" {
+				prResource = presource
+				prResourceName = pid
+			} else {
+				prResource, prResourceName = v.GetListResourceName()
+			}
 			ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
 				Group:        c.resourceGroup,
 				Resource:     prResource,
@@ -1030,10 +1074,26 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	presource := g.Param("presource")
+	pid := g.Param("pid")
+	if pid != "" {
+		if v, ok := q.(SetParentId); ok {
+			v.SetParentId(pid)
+		}
+	}
 
 	if c.EnPermission(q) {
-		if v, ok := q.(GetListResourceName); ok {
-			prResource, prResourceName := v.GetListResourceName()
+
+		if v, ok := q.(GetListResourceName); ok || presource != "" {
+			prResource := ""
+			prResourceName := ""
+			if presource != "" {
+				prResource = presource
+				prResourceName = pid
+			} else {
+				prResource, prResourceName = v.GetListResourceName()
+			}
+
 			//只有资源ID不为空时才进行权限检查
 			if prResourceName != "" {
 				ok, err := c.idaas.GetClient(g).PermissionEnforce(idaas.EnforceParam{
