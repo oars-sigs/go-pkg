@@ -15,6 +15,7 @@ func AddBaseRouter(r *gin.RouterGroup, crudc *BaseInfoController) {
 	r.POST("/:resource/import", crudc.Import)
 	r.POST("/:resource/createinbatches", crudc.CreateInBatches)
 	r.POST("/:resource/former/:id/:mark", crudc.CreateFormer)
+	r.POST("/baseinfo/:resource/former/:mark/:id", crudc.CreateFormer)
 	//
 	r.GET("/presource/:presource/:pid/:resource/:id", crudc.Get)
 	r.GET("/presource/:presource/:pid/:resource/:id/:action", crudc.Get)
@@ -28,6 +29,7 @@ func AddBaseRouter(r *gin.RouterGroup, crudc *BaseInfoController) {
 	r.POST("/presource/:presource/:pid/:resource/import", crudc.Import)
 	r.POST("/presource/:presource/:pid/:resource/createinbatches", crudc.CreateInBatches)
 	r.POST("/presource/:presource/:pid/:resource/former/:id/:mark", crudc.CreateFormer)
+	r.POST("/presource/:presource/:pid/:resource/former/:id/:mark/:id", crudc.CreateFormer)
 	if crudc.opt.Former != nil {
 		r.POST("/flow/hook", crudc.opt.Former.Hook(crudc.FlowHook))
 	}
