@@ -73,6 +73,7 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 	if isCreate {
 		m.(CommonModelInf).GenID()
 		id = m.(CommonModelInf).GetId()
+		m.(CommonModelInf).SetCreatedBy(c.GetUid(g))
 	}
 	if flowData.ResourceData != nil {
 		err = json.Unmarshal(flowData.ResourceData, m)
