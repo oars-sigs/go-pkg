@@ -18,11 +18,13 @@ type ResourceFlowInfo struct {
 
 	FromId       string         `json:"fromId" gorm:"column:from_id;size:100;comment:资源ID"`
 	FromType     string         `json:"fromType" gorm:"column:from_type;size:100;comment:资源类型"`
-	FromGroupId  string         `json:"fromGroupId" gorm:"column:from_group_id;size:100;comment::资源组"`
+	FromGroupId  string         `json:"fromGroupId" gorm:"column:from_group_id;size:100;comment:资源组"`
 	Remark       string         `json:"remark" gorm:"column:remark;size:200;comment:流程模型Remark"`
 	FlowId       string         `json:"flowId" gorm:"column:flow_id;size:100;comment:关联的流程ID"`
 	Model        string         `json:"model" gorm:"column:model;size:100;comment:关联的流程Model"`
 	CompleteData datatypes.JSON `json:"completeData" gorm:"column:complete_data;type:json;comment:流程模型数据"`
+	Title        string         `json:"title" gorm:"column:title;type:varchar(255);size:255;comment:流程标题"`
+	Content      string         `json:"content" gorm:"column:content;type:text;comment:流程内容"`
 }
 
 // TableName ResourceFlowInfo's table name
@@ -31,11 +33,21 @@ func (*ResourceFlowInfo) TableName() string {
 }
 
 type FormerFlowData struct {
-	Data         map[string]any      `json:"data"`
-	ResourceData json.RawMessage     `json:"resourceData"`
-	CompleteData datatypes.JSON      `json:"completeData"`
-	ActionUsers  []former.ActionUser `json:"actionUsers"`
-	FromGroupId  string              `json:"fromGroupId"`
+	Data          map[string]any      `json:"data"`
+	ResourceData  json.RawMessage     `json:"resourceData"`
+	CompleteData  datatypes.JSON      `json:"completeData"`
+	ActionUsers   []former.ActionUser `json:"actionUsers"`
+	FromGroupId   string              `json:"fromGroupId"`
+	FormerContent *FormerContent      `json:"formerContent"`
+}
+
+type FormerContent struct {
+	Content string `json:"content"`
+	Title   string `json:"title"`
+}
+
+type GetFormerContent interface {
+	GetFormerContent() *FormerContent
 }
 
 func (c *BaseInfoController) CreateFormer(g *gin.Context) {
@@ -89,7 +101,8 @@ func (c *BaseInfoController) CreateFormer(g *gin.Context) {
 	db := c.Tx.GetDB()
 	var res any
 	err = db.Transaction(func(tx *gorm.DB) error {
-		res, err = CreateFormer(tx, c.opt.Former, id, uid, resource, modelMark, flowData.Data, flowData.CompleteData, flowData.FromGroupId)
+		res, err = CreateFormer(tx, c.opt.Former, id, uid, resource, modelMark,
+			flowData.Data, flowData.CompleteData, flowData.FromGroupId, flowData.FormerContent)
 		if err != nil {
 			return err
 		}
@@ -138,7 +151,10 @@ func (c *BaseInfoController) Approve(g *gin.Context) {
 	c.opt.Former.Approve(uid, &former.BusTask{})
 }
 
-func CreateFormer(db *gorm.DB, formercli *former.Client, id, uid, resource, modelMark string, flowData map[string]any, completeData datatypes.JSON, fromGroupId string) (*ResourceFlowInfo, error) {
+func CreateFormer(db *gorm.DB, formercli *former.Client, id, uid, resource, modelMark string,
+	flowData map[string]any, completeData datatypes.JSON, fromGroupId string,
+	flowContent *FormerContent,
+) (*ResourceFlowInfo, error) {
 	m, err := formercli.GetModel(uid, &former.BusData{
 		ModelMark:  modelMark,
 		Data:       flowData,
@@ -166,6 +182,10 @@ func CreateFormer(db *gorm.DB, formercli *former.Client, id, uid, resource, mode
 		Remark:       m.Name,
 		CompleteData: completeData,
 		FromGroupId:  fromGroupId,
+	}
+	if flowContent != nil {
+		flowInfo.Content = flowContent.Content
+		flowInfo.Title = flowContent.Title
 	}
 	flowInfo.CreatedBy = uid
 	flowInfo.GenID()
