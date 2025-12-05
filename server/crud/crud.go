@@ -1248,7 +1248,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		res = l.ListGen(res, g)
 	}
 	if pageNum != "" {
-		c.PageOK(g, res, int(total), page.PageNum, page.PageSize)
+		c.PageOK(g, res, int(total), page.PageNum, page.PageSize, g.GetString(MsgCtx))
 		return
 	}
 
