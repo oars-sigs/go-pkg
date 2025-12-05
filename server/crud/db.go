@@ -45,7 +45,7 @@ func BuildGen(data any, kind string) {
 	searchText := ""
 	for i := 0; i < typeObj.NumField(); i++ {
 		item := typeObj.Field(i)
-		tags := getTags(item.Tag.Get("gsql"))
+		tags := getTags(item.Tag.Get("gsql"), false)
 		if tags.SearchText == "default" {
 			searchText += fmt.Sprint(valueObj.FieldByName(item.Name).Interface())
 		}
@@ -141,9 +141,10 @@ func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds 
 	ok := false
 	isJoin := false
 	isTable := false
+	del := existDeleteAt(typeObj)
 	for i := 0; i < typeObj.NumField(); i++ {
 		json2db(typeObj.Field(i).Tag.Get("json"), typeObj.Field(i).Tag.Get("gorm"), json2f)
-		tags := getTags(typeObj.Field(i).Tag.Get("gsql"))
+		tags := getTags(typeObj.Field(i).Tag.Get("gsql"), del)
 		if tags.Table != "" {
 			ok = true
 			db = db.Table(tags.Table)
@@ -183,6 +184,20 @@ func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds 
 	return db, &buildOrmRes{IsJoin: isJoin, IsTable: isTable, Change: ok, json2f: json2f}
 }
 
+func existDeleteAt(typeObj reflect.Type) bool {
+	for i := 0; i < typeObj.NumField(); i++ {
+		if typeObj.Field(i).Name == "DeletedAt" {
+			return true
+		}
+		if typeObj.Field(i).Type.Kind() == reflect.Struct {
+			if existDeleteAt(typeObj.Field(i).Type) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type gSql struct {
 	Joins      []string
 	Wheres     []string
@@ -194,7 +209,7 @@ type gSql struct {
 	Order      []string
 }
 
-func getTags(s string) *gSql {
+func getTags(s string, del bool) *gSql {
 	var res = &gSql{}
 	tags := strings.Split(s, ";")
 	for _, tag := range tags {
@@ -207,7 +222,7 @@ func getTags(s string) *gSql {
 			d := keys[1]
 			if !strings.Contains(d, "deleted_at") {
 				ss := strings.Split(d, " as ")
-				if len(ss) > 1 {
+				if len(ss) > 1 && del {
 					d = d + " AND " + strings.Split(strings.TrimSpace(ss[1]), " ")[0] + ".deleted_at is NULL"
 				}
 			}
