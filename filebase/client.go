@@ -29,7 +29,7 @@ type Config struct {
 	SessionToken string
 }
 
-//Client filebase client
+// Client filebase client
 type Client struct {
 	cfg *Config
 }
@@ -197,4 +197,23 @@ func (c *Client) CreateFile(f *FileMetadata) (*FileMetadata, error) {
 		return nil, err
 	}
 	return out.Data, nil
+}
+
+type PutWithURLResp struct {
+	base.DataResponse
+	Data string `json:"data"`
+}
+
+func (c *Client) PutWithURL(url, namespace, parent, name, ext string) (string, error) {
+	params := URLFile{
+		URL:  url,
+		Name: name,
+	}
+	var out PutWithURLResp
+	err := req.ReqJSON("POST", fmt.Sprintf("%s/filebase/api/v1/%s/urlfile", c.cfg.Address, namespace),
+		params, &out, c.setAuthHeader(nil))
+	if err != nil {
+		return "", err
+	}
+	return out.Data, out.Error.Error()
 }

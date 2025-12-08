@@ -49,7 +49,7 @@ const (
 	FilePublic   = 3
 )
 
-//Namespace 项目
+// Namespace 项目
 type Namespace struct {
 	ID       string `gorm:"column:namespace_id" json:"id"`
 	Name     string `gorm:"column:namespace_name" json:"name"`
@@ -60,7 +60,7 @@ type Namespace struct {
 	Updated  int64  `gorm:"column:namespace_updated"  json:"updated"`
 }
 
-//NamespaceMember 项目成员
+// NamespaceMember 项目成员
 type NamespaceMember struct {
 	ID          string `gorm:"column:nm_id" json:"id"`
 	NamespaceID string `gorm:"column:nm_namespace_id" json:"namespaceId"`
@@ -69,4 +69,10 @@ type NamespaceMember struct {
 	Role        string `gorm:"column:nm_role" json:"role"`
 	Created     int64  `gorm:"column:nm_created" json:"created"`
 	Updated     int64  `gorm:"column:nm_updated" json:"updated"`
+}
+
+type URLFile struct {
+	URL        string `json:"url"`
+	Name       string `json:"name"`
+	Visibility int    `json:"visibility"`
 }
