@@ -167,7 +167,6 @@ func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds 
 			*searchFileds = append(*searchFileds, tags.Search)
 		}
 		for _, t := range tags.Order {
-			ok = true
 			db = db.Order(t)
 		}
 		if typeObj.Field(i).Type.Kind() == reflect.Struct {
