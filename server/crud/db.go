@@ -166,6 +166,10 @@ func buildORMItem(typeObj reflect.Type, db *gorm.DB, selectFileds, searchFileds 
 		if tags.Search != "" {
 			*searchFileds = append(*searchFileds, tags.Search)
 		}
+		for _, t := range tags.Order {
+			ok = true
+			db = db.Order(t)
+		}
 		if typeObj.Field(i).Type.Kind() == reflect.Struct {
 			vdb, res := buildORMItem(typeObj.Field(i).Type, db, selectFileds, searchFileds, json2f)
 			if res.IsJoin {
