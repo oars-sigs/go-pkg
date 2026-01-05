@@ -263,3 +263,18 @@ func json2db(j, o string, data map[string]string) {
 		}
 	}
 }
+
+func getDBTag(data any, json2f map[string]string) {
+	typeObj := reflect.TypeOf(data).Elem()
+	for i := 0; i < typeObj.NumField(); i++ {
+		for k := range json2f {
+			jk := typeObj.Field(i).Tag.Get("json")
+			if k == jk {
+				json2db(jk, typeObj.Field(i).Tag.Get("gorm"), json2f)
+			}
+		}
+		if typeObj.Field(i).Type.Kind() == reflect.Struct {
+			getdbTag(typeObj.Field(i).Type, json2f)
+		}
+	}
+}

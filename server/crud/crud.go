@@ -1220,6 +1220,32 @@ func (c *BaseInfoController) List(g *gin.Context) {
 			}
 			db = db.Where(dw)
 		}
+		summaryFileds := g.QueryArray("summaryFiled")
+		if len(summaryFileds) > 0 {
+			sqlstr := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+				return db
+			})
+			tx := db.Table("(" + sqlstr + ") as m")
+			tx.Statement.Table = "m"
+			jks := make(map[string]string)
+			for _, v := range summaryFileds {
+				jks[v] = ""
+			}
+			getDBTag(res, jks)
+			for _, v := range jks {
+				tx = tx.Select("sum(m." + v + ") as " + v)
+			}
+			var summary []map[string]interface{}
+			err := tx.Find(&summary).Error
+			if err != nil {
+				logrus.Error(err)
+				c.Error(g, err)
+				return
+			}
+			if len(summary) > 0 {
+				page.Summary = summary[0]
+			}
+		}
 
 		err = db.Where(q).Count(&total).Error
 		if err != nil {
