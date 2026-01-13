@@ -461,7 +461,7 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 					Group:        c.resourceGroup,
 					Resource:     prResource,
 					ResourceName: prResourceName,
-					Action:       ListKind,
+					Action:       GetKind,
 					UserId:       c.GetUid(g),
 				})
 				if err != nil {
@@ -607,7 +607,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 				Group:        c.resourceGroup,
 				Resource:     prResource,
 				ResourceName: prResourceName,
-				Action:       ListKind,
+				Action:       GetKind,
 				UserId:       c.GetUid(g),
 			})
 			if err != nil {
@@ -765,7 +765,7 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 				Group:        c.resourceGroup,
 				Resource:     prResource,
 				ResourceName: prResourceName,
-				Action:       ListKind,
+				Action:       GetKind,
 				UserId:       c.GetUid(g),
 			})
 			if err != nil {
@@ -946,7 +946,7 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 				Group:        c.resourceGroup,
 				Resource:     prResource,
 				ResourceName: prResourceName,
-				Action:       ListKind,
+				Action:       GetKind,
 				UserId:       c.GetUid(g),
 			})
 			if err != nil {
@@ -1100,7 +1100,7 @@ func (c *BaseInfoController) List(g *gin.Context) {
 					Group:        c.resourceGroup,
 					Resource:     prResource,
 					ResourceName: prResourceName,
-					Action:       ListKind,
+					Action:       GetKind,
 					UserId:       c.GetUid(g),
 				})
 				if err != nil {
