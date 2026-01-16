@@ -224,29 +224,48 @@ type NodeUserList struct {
 	SearchText string `json:"searchText"`
 }
 type NodeConfig struct {
-	NodeName                string          `json:"nodeName"`
-	Type                    int             `json:"type"`
-	PriorityLevel           int             `json:"priorityLevel"`
-	Settype                 int             `json:"settype"`
-	SelectMode              int             `json:"selectMode"`
-	SelectRange             int             `json:"selectRange"`
-	DeptRange               int             `json:"deptRange"`
-	DirectorLevel           int             `json:"directorLevel"`
-	ExamineMode             int             `json:"examineMode"`
-	NoHanderAction          int             `json:"noHanderAction"`
-	ExamineEndDirectorLevel int             `json:"examineEndDirectorLevel"`
-	CcSelfSelectFlag        int             `json:"ccSelfSelectFlag"`
-	ConditionList           []ConditionList `json:"conditionList"`
-	NodeUserList            []NodeUserList  `json:"nodeUserList"`
-	DeptRangeList           []NodeUserList  `json:"deptRangeList"`
-	ChildNode               *NodeConfig     `json:"childNode"`
-	ConditionNodes          []NodeConfig    `json:"conditionNodes"`
-	Error                   bool            `json:"error"`
-	FormConfig              []interface{}   `json:"formConfig"`
-	MsgTpl                  string          `json:"msgTpl"`
-	Proportion              float64         `json:"proportion"`
-	Mark                    string          `json:"mark"`
-	Preconditions           string          `json:"preconditions"`
+	NodeName                string           `json:"nodeName"`
+	Type                    int              `json:"type"`
+	PriorityLevel           int              `json:"priorityLevel"`
+	Settype                 int              `json:"settype"`
+	SelectMode              int              `json:"selectMode"`
+	SelectRange             int              `json:"selectRange"`
+	DeptRange               int              `json:"deptRange"`
+	DeptRangeLevel          int              `json:"deptRangeLevel"`
+	DirectorLevel           int              `json:"directorLevel"`
+	ExamineMode             int              `json:"examineMode"`
+	NoHanderAction          int              `json:"noHanderAction"`
+	ExamineEndDirectorLevel int              `json:"examineEndDirectorLevel"`
+	CcSelfSelectFlag        int              `json:"ccSelfSelectFlag"`
+	ConditionList           []ConditionList  `json:"conditionList"`
+	NodeUserList            []NodeUserList   `json:"nodeUserList"`
+	DeptRangeList           []NodeUserList   `json:"deptRangeList"`
+	ChildNode               *NodeConfig      `json:"childNode"`
+	ConditionNodes          []NodeConfig     `json:"conditionNodes"`
+	Error                   bool             `json:"error"`
+	FormConfig              []interface{}    `json:"formConfig"`
+	MsgTpl                  string           `json:"msgTpl"`
+	Proportion              float64          `json:"proportion"`
+	Mark                    string           `json:"mark"`
+	Preconditions           string           `json:"preconditions"`
+	Postconditions          string           `json:"postconditions"`
+	DataScript              string           `json:"dataScript"`
+	CanAddUser              bool             `json:"canAddUser"`
+	ConditionScript         string           `json:"conditionScript"`
+	Timeout                 int64            `json:"timeout" gorm:"column:timeout"`
+	TimeoutAct              string           `json:"timeoutAct" gorm:"column:timeout_act;size:255"`
+	RoleProportions         []RoleProportion `json:"roleProportions"`
+	BtnConfig               BtnConfig        `json:"btnConfig"`
+}
+
+type BtnConfig struct {
+	Btns []any `json:"btns"`
+}
+
+type RoleProportion struct {
+	Id         string  `json:"id"`
+	Name       string  `json:"name"`
+	Proportion float64 `json:"proportion"`
 }
 
 type Hook struct {
