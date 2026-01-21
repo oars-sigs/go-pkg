@@ -1684,8 +1684,28 @@ func (c *BaseInfoController) CreateInBatches(g *gin.Context) {
 			v.GenID()
 		}
 	}
-
-	err = db.CreateInBatches(m, 100).Error
+	clean := g.Query("clean") == "true"
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if clean {
+			q, err := c.GetBaseInfo(resource, nil, GetKind)
+			if err != nil {
+				return err
+			}
+			err = g.ShouldBindQuery(q)
+			if err != nil {
+				return err
+			}
+			err = tx.Where(q).Delete(q).Error
+			if err != nil {
+				return err
+			}
+		}
+		err = db.CreateInBatches(m, 100).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		c.Error(g, err)
 		return
