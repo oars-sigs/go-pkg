@@ -1700,7 +1700,7 @@ func (c *BaseInfoController) CreateInBatches(g *gin.Context) {
 				return err
 			}
 		}
-		err = db.CreateInBatches(m, 100).Error
+		err = tx.CreateInBatches(m, 100).Error
 		if err != nil {
 			return err
 		}
