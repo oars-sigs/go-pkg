@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"pkg.oars.vip/go-pkg/server/base"
 )
@@ -201,4 +202,35 @@ func FindWithPage(db *gorm.DB, g *gin.Context, res any) (any, error) {
 
 func init() {
 	readQuerySql()
+}
+
+func BuildQueryWithSql(db *gorm.DB, sqlstr string, args map[string]any) (*gorm.DB, error) {
+	t, err := template.New("sql").Parse(sqlstr)
+	if err != nil {
+		return db, err
+	}
+	b := bytes.NewBuffer(nil)
+	err = t.Execute(b, args)
+	if err != nil {
+		return db, err
+	}
+	if len(args) == 0 {
+		return db.Raw(b.String()), nil
+	}
+	return db.Raw(b.String(), args), nil
+}
+
+func BuildSubQueryWithSql(db *gorm.DB, sqlstr string, args map[string]any) (*gorm.DB, error) {
+	sqlstr = db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		qdb, err := BuildQueryWithSql(tx, sqlstr, args)
+		if err != nil {
+			logrus.Error(err)
+			return nil
+		}
+		var m []string
+		return qdb.Find(&m)
+	})
+	tx := db.Table("(" + sqlstr + ") as m")
+	tx.Statement.Table = "m"
+	return tx, nil
 }
