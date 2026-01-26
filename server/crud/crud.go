@@ -1257,7 +1257,8 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		db = db.Limit(page.PageSize).Offset(start)
 	}
 
-	if _, ok := res.(CommonModelCreatedInf); ok {
+	typeObj := reflect.TypeOf(res).Elem()
+	if _, ok := reflect.New(typeObj).Interface().(CommonModelCreatedInf); ok {
 		db = db.Order("created desc")
 	}
 
