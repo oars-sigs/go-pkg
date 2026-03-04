@@ -708,6 +708,7 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	m.(CommonModelInf).SetID(id)
 	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
 		l.ChangeCallback(m, UpdateKind)
 	}
