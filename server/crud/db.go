@@ -278,3 +278,14 @@ func getDBTag(data any, json2f map[string]string) {
 		}
 	}
 }
+
+func GetDBTag(data any, json2f map[string]string) {
+	getDBTag(data, json2f)
+}
+
+func GetDBTagWithJSONTag(data any, jsonTag string) (string, bool) {
+	tags := make(map[string]string)
+	getDBTag(data, tags)
+	res, ok := tags[jsonTag]
+	return res, ok
+}
