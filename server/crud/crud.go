@@ -202,6 +202,10 @@ type CommonModelCreatedInf interface {
 	GetCreated() int64
 }
 
+type ResourceSQLInf interface {
+	GenDB(resource, action string, resources *idaas.ResourceNames, db *gorm.DB, g *gin.Context) (*gorm.DB, error)
+}
+
 type SimpleModel struct {
 	Id        string `json:"id" gorm:"column:id;type:varchar(40);size:40"`
 	Created   int64  `json:"created" gorm:"column:created;autoCreateTime:milli;comment:创建时间戳"`
@@ -279,6 +283,7 @@ type BaseInfoController struct {
 	idaas         *idaas.Client
 	resourceGroup string
 	opt           *Option
+	ResourceSQL   ResourceSQLInf
 }
 
 type resourceModelReg struct {
@@ -429,6 +434,9 @@ func (c *BaseInfoController) EnPermission(s any) bool {
 		return !dis.DisablePermission()
 	}
 	return true
+}
+func (c *BaseInfoController) RegResourceSQL(s ResourceSQLInf) {
+	c.ResourceSQL = s
 }
 
 func (c *BaseInfoController) Create(g *gin.Context) {
@@ -1171,8 +1179,21 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		return
 	}
 	db := c.Tx.GetDB()
+	var sdb *gorm.DB
+	if c.ResourceSQL != nil {
+		sdb, err = c.ResourceSQL.GenDB(resource, ListKind, resources, c.Tx.GetDB(), g)
+		if err != nil {
+			logrus.Error(err)
+			c.Error(g, err)
+			return
+		}
+	}
 	if l, ok := c.GetService(resource).(CommonModelList); ok {
-		db, res, err = l.ListORM(c.Tx.GetDB(), g, resources)
+		vdb := sdb
+		if vdb == nil {
+			vdb = c.Tx.GetDB()
+		}
+		db, res, err = l.ListORM(vdb, g, resources)
 		if err != nil {
 			c.Error(g, err)
 			return
@@ -1181,6 +1202,8 @@ func (c *BaseInfoController) List(g *gin.Context) {
 			c.OK(g, res)
 			return
 		}
+	} else if sdb != nil {
+		db = sdb
 	} else {
 		borm, ok := BuildListORM(res, db, &BuildORMOption{
 			Search:       g.Query("search"),
