@@ -75,6 +75,24 @@ type CommonModelChangeCallback interface {
 	ChangeCallback(data any, action string)
 }
 
+// ResourceCallbackResult 资源操作回调结果
+type ResourceCallbackResult struct {
+	Resource     string        // 资源名称
+	ResourceName string        // 资源实例ID
+	Action       string        // 操作类型
+	Data         any           // 操作的数据
+	OldData      any           // 旧数据（仅Update操作有值）
+	G            *gin.Context  // gin.Context
+	Error        error         // 错误信息
+	UID          string        // 用户ID
+	AppId        string        // 应用ID
+}
+
+// ResourceLogCallback 资源日志回调接口
+type ResourceLogCallback interface {
+	LogCallback(result *ResourceCallbackResult)
+}
+
 type CommonModelCreateInBatches interface {
 	CreateInBatchesORM(data any, db *gorm.DB, g *gin.Context) error
 }
@@ -566,23 +584,15 @@ func (c *BaseInfoController) Create(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
-		l.ChangeCallback(m, CreateKind)
-	}
-
-	if c.opt.OperationLogSrv != nil {
-		log := &OperationLog{
-			Resource:     resource,
-			ResourceName: m.(CommonModelInf).GetId(),
-			Action:       CreateKind,
-			CommonModel: CommonModel{
-				CreatedBy: c.GetUid(g),
-				AppId:     c.GetAppId(g),
-			},
-		}
-		log.GenID()
-		c.genOperationLog(log, nil, m)
-	}
+	c.LogOperation(&ResourceCallbackResult{
+		Resource:     resource,
+		ResourceName: m.(CommonModelInf).GetId(),
+		Action:       CreateKind,
+		Data:         m,
+		G:            g,
+		UID:          c.GetUid(g),
+		AppId:        c.GetAppId(g),
+	})
 
 	c.OK(g, m, g.GetString(MsgCtx))
 }
@@ -717,22 +727,16 @@ func (c *BaseInfoController) Update(g *gin.Context) {
 		return
 	}
 	m.(CommonModelInf).SetID(id)
-	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
-		l.ChangeCallback(m, UpdateKind)
-	}
-	if c.opt.OperationLogSrv != nil {
-		log := &OperationLog{
-			Resource:     resource,
-			ResourceName: m.(CommonModelInf).GetId(),
-			Action:       UpdateKind,
-			CommonModel: CommonModel{
-				CreatedBy: c.GetUid(g),
-				AppId:     c.GetAppId(g),
-			},
-		}
-		log.GenID()
-		c.genOperationLog(log, oldRes, m)
-	}
+	c.LogOperation(&ResourceCallbackResult{
+		Resource:     resource,
+		ResourceName: m.(CommonModelInf).GetId(),
+		Action:       UpdateKind,
+		Data:         m,
+		OldData:      oldRes,
+		G:            g,
+		UID:          c.GetUid(g),
+		AppId:        c.GetAppId(g),
+	})
 	c.OK(g, m, g.GetString(MsgCtx))
 }
 
@@ -866,23 +870,16 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
-	if l, ok := c.GetService(resource).(CommonModelChangeCallback); ok {
-		m.(CommonModelInf).SetID(id)
-		l.ChangeCallback(m, DeleteKind)
-	}
-	if c.opt.OperationLogSrv != nil {
-		log := &OperationLog{
-			Resource:     resource,
-			ResourceName: m.(CommonModelInf).GetId(),
-			Action:       DeleteKind,
-			CommonModel: CommonModel{
-				CreatedBy: c.GetUid(g),
-				AppId:     c.GetAppId(g),
-			},
-		}
-		log.GenID()
-		c.genOperationLog(log, nil, m)
-	}
+	m.(CommonModelInf).SetID(id)
+	c.LogOperation(&ResourceCallbackResult{
+		Resource:     resource,
+		ResourceName: m.(CommonModelInf).GetId(),
+		Action:       DeleteKind,
+		Data:         m,
+		G:            g,
+		UID:          c.GetUid(g),
+		AppId:        c.GetAppId(g),
+	})
 	c.OK(g, nil, g.GetString(MsgCtx))
 }
 
@@ -1038,17 +1035,15 @@ func (c *BaseInfoController) Get(g *gin.Context) {
 		}
 	}
 	if c.opt.OperationLogSrv != nil {
-		log := &OperationLog{
+		c.LogOperation(&ResourceCallbackResult{
 			Resource:     resource,
 			ResourceName: id,
 			Action:       GetKind,
-			CommonModel: CommonModel{
-				CreatedBy: c.GetUid(g),
-				AppId:     c.GetAppId(g),
-			},
-		}
-		log.GenID()
-		c.genOperationLog(log, nil, res)
+			Data:         res,
+			G:            g,
+			UID:          c.GetUid(g),
+			AppId:        c.GetAppId(g),
+		})
 	}
 	if l, ok := c.GetService(resource).(CommonModelGetGen); ok {
 		res = l.GetGen(res)
@@ -1292,6 +1287,14 @@ func (c *BaseInfoController) List(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	c.LogOperation(&ResourceCallbackResult{
+		Resource: resource,
+		Action:   ListKind,
+		Data:     res,
+		G:        g,
+		UID:      c.GetUid(g),
+		AppId:    c.GetAppId(g),
+	})
 	if l, ok := c.GetService(resource).(CommonModelListGen); ok {
 		res = l.ListGen(res)
 	}

@@ -25,6 +25,34 @@ type OperationLogService interface {
 	Create(l any) error
 }
 
+// LogOperation 统一的资源操作日志回调函数
+func (c *BaseInfoController) LogOperation(result *ResourceCallbackResult) {
+	// 调用新的 ResourceLogCallback 接口
+	if l, ok := c.GetService(result.Resource).(ResourceLogCallback); ok {
+		l.LogCallback(result)
+	}
+	// 保持向后兼容，调用旧的 CommonModelChangeCallback 接口（Get 和 List 操作不调用）
+	if l, ok := c.GetService(result.Resource).(CommonModelChangeCallback); ok {
+		if result.Action != GetKind && result.Action != ListKind {
+			l.ChangeCallback(result.Data, result.Action)
+		}
+	}
+	// 生成操作日志（List 操作不记录到日志表）
+	if c.opt.OperationLogSrv != nil && result.Action != ListKind {
+		log := &OperationLog{
+			Resource:     result.Resource,
+			ResourceName: result.ResourceName,
+			Action:       result.Action,
+			CommonModel: CommonModel{
+				CreatedBy: result.UID,
+				AppId:     result.AppId,
+			},
+		}
+		log.GenID()
+		c.genOperationLog(log, result.OldData, result.Data)
+	}
+}
+
 func (c *BaseInfoController) genOperationLog(l *OperationLog, oldRes, curRes any) {
 	if fn, ok := curRes.(CommonModelTitle); ok {
 		l.ResourceTitle = fn.GetTitle()
