@@ -77,15 +77,15 @@ type CommonModelChangeCallback interface {
 
 // ResourceCallbackResult 资源操作回调结果
 type ResourceCallbackResult struct {
-	Resource     string        // 资源名称
-	ResourceName string        // 资源实例ID
-	Action       string        // 操作类型
-	Data         any           // 操作的数据
-	OldData      any           // 旧数据（仅Update操作有值）
-	G            *gin.Context  // gin.Context
-	Error        error         // 错误信息
-	UID          string        // 用户ID
-	AppId        string        // 应用ID
+	Resource     string       // 资源名称
+	ResourceName string       // 资源实例ID
+	Action       string       // 操作类型
+	Data         any          // 操作的数据
+	OldData      any          // 旧数据（仅Update操作有值）
+	G            *gin.Context // gin.Context
+	Error        error        // 错误信息
+	UID          string       // 用户ID
+	AppId        string       // 应用ID
 }
 
 // ResourceLogCallback 资源日志回调接口
@@ -761,8 +761,15 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		c.Error(g, err)
 		return
 	}
+	// 先获取被删除的数据
+	oldRes, err := c.getRes(resource, id)
+	if err != nil {
+		logrus.Error(err)
+		c.Error(g, err)
+		return
+	}
 	if c.EnPermission(m) {
-		q, _ := c.getRes(resource, id)
+		q := oldRes
 		presource := g.Param("presource")
 		pid := g.Param("pid")
 		if v, ok := q.(GetListResourceName); ok || presource != "" {
@@ -871,11 +878,16 @@ func (c *BaseInfoController) Delete(g *gin.Context) {
 		return
 	}
 	m.(CommonModelInf).SetID(id)
+	// 使用获取到的旧数据作为 Data
+	delData := oldRes
+	if delData == nil {
+		delData = m
+	}
 	c.LogOperation(&ResourceCallbackResult{
 		Resource:     resource,
 		ResourceName: m.(CommonModelInf).GetId(),
 		Action:       DeleteKind,
-		Data:         m,
+		Data:         delData,
 		G:            g,
 		UID:          c.GetUid(g),
 		AppId:        c.GetAppId(g),
